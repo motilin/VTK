@@ -1,4 +1,4 @@
-# Quadratic Surface Visualization Framework
+# VTK Visualization Framework
 
 ## Overview
 
