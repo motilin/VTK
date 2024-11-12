@@ -1,0 +1,22 @@
+VTK/
+│
+├── src/
+│   ├── __init__.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── constants.py
+│   │   ├── interactor.py
+│   │   └── visualization.py
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── surface_utils.py
+│   │   └── trace_utils.py
+│   └── widgets/
+│       ├── __init__.py
+│       └── sliders.py
+│
+├── examples/
+│   └── cylinder_example.py
+│
+├── README.md
+└── requirements.txt
