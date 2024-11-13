@@ -1,12 +1,12 @@
 import os
 import sys
-from src.core.constants import WINDOW_WIDTH, WINDOW_HEIGHT
 
 # Dynamically set PYTHONPATH in .env
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.environ["PYTHONPATH"] = project_root
 sys.path.append(project_root)
 
+from src.core.constants import WINDOW_WIDTH, WINDOW_HEIGHT
 from PyQt5.QtWidgets import (
     QApplication,
     QHBoxLayout,
