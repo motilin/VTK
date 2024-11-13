@@ -2,6 +2,7 @@
 Custom slider widgets and related functionality.
 """
 
+import vtk
 from vtkmodules.vtkRenderingCore import vtkTextActor
 from vtkmodules.vtkInteractionWidgets import (
     vtkSliderRepresentation2D,
@@ -87,3 +88,12 @@ class SliderManager:
         text_actor.GetTextProperty().SetColor(colors.GetColor3d("White"))
         text_actor.SetPosition(x, y)
         return text_actor
+
+
+def toggle_actor(actor):
+    """
+    Toggle the visibility of an actor.
+    """
+    actor.SetVisibility(not actor.GetVisibility())
+    actor.GetMapper().Update()
+    actor.GetMapper().Modified()
