@@ -2,6 +2,14 @@
 Example implementation showing how to visualize an arbitrary implicit surface equation.
 """
 
+import os, sys
+from dotenv import load_dotenv
+
+# Dynamically set PYTHONPATH in .env
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+os.environ["PYTHONPATH"] = project_root
+sys.path.append(project_root)
+
 from rich import print
 import sympy as sp
 import numpy as np
