@@ -1,5 +1,11 @@
 import os
 import sys
+
+# Dynamically set PYTHONPATH in .env
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+os.environ["PYTHONPATH"] = project_root
+sys.path.append(project_root)
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget
 import vtk
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
@@ -10,11 +16,6 @@ from src.utils.surface_utils import (
     set_z_gradient_coloring,
 )
 from src.utils.line_utils import create_axes
-
-# Dynamically set PYTHONPATH in .env
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-os.environ["PYTHONPATH"] = project_root
-sys.path.append(project_root)
 
 
 # Define the custom interactor style
