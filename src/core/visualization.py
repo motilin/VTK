@@ -22,11 +22,10 @@ def setup_renderer():
     return ren, renWin, iren
 
 
-def configure_window(renWin, ren, width, height, title):
+def configure_window(renWin, ren, width, height):
     """Configure the render window."""
     ren.SetBackground(colors.GetColor3d("dark_blue"))
     renWin.SetSize(width, height)
-    renWin.SetWindowName(title)
 
 
 def set_mathematical_view(renderer):

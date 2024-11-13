@@ -6,9 +6,15 @@ import vtk
 import sys
 
 
+# Define the custom interactor style
 class CustomInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
     def __init__(self, parent=None):
+        self.AddObserver("LeftButtonPressEvent", self.left_button_press_event)
         self.AddObserver("KeyPressEvent", self.on_key_press_event)
+
+    def left_button_press_event(self, obj, event):
+        self.OnLeftButtonDown()
+        return
 
     def on_key_press_event(self, obj, event):
         key = self.GetInteractor().GetKeySym()
