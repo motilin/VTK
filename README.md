@@ -62,12 +62,12 @@ pip install -r requirements.txt
 
 ### Example: Cylinder Visualization
 
-The `examples/cylinder_example.py` script demonstrates how to use the framework to visualize a cylinder with interactive sliders for color, resolution, and height/width ratio.
+The `applications/cylinder_example.py` script demonstrates how to use the framework to visualize a cylinder with interactive sliders for color, resolution, and height/width ratio.
 
 To run the example, use the following command:
 
 ```sh
-python examples/cylinder_example.py
+python applications/cylinder_example.py
 ```
 
 ### Key Components
