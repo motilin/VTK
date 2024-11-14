@@ -1,4 +1,12 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QSizePolicy, QLabel, QSpacerItem
+from PyQt5.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QPushButton,
+    QSizePolicy,
+    QLabel,
+    QComboBox,
+    QHBoxLayout,
+)
 from PyQt5.QtCore import Qt
 import vtk
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
@@ -32,8 +40,10 @@ class ControlWidget(QWidget):
         super().__init__(parent)
         self.layout = QVBoxLayout()
         self.layout.setSpacing(CONTROL_PANEL_SPACING)
+        self.layout.setAlignment(Qt.AlignTop | Qt.AlignRight)
         self.setLayout(self.layout)
         self.setFixedWidth(CONTROL_PANEL_WIDTH)
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
 
     def add_range_sliders(self, bounds, update_callback):
         add_range_sliders(
@@ -46,7 +56,16 @@ class ControlWidget(QWidget):
     def add_button(self, text, callback):
         button = QPushButton(text, self)
         button.clicked.connect(callback)
-        button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.layout.addWidget(button, alignment=Qt.AlignTop)
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(button, alignment=Qt.AlignTop)
+        self.layout.addLayout(button_layout)
 
-
+    def add_dropdown(self, text, options, callback):
+        label = QLabel(text, self)
+        dropdown = QComboBox(self)
+        dropdown.addItems(options)
+        dropdown.currentIndexChanged.connect(callback)
+        dropdown_layout = QHBoxLayout()
+        dropdown_layout.addWidget(label, alignment=Qt.AlignLeft)
+        dropdown_layout.addWidget(dropdown, alignment=Qt.AlignLeft)
+        self.layout.addLayout(dropdown_layout)

@@ -31,6 +31,7 @@ from src.utils.surface_utils import (
 )
 from src.utils.line_utils import create_axes
 from qt.widgets import VTKWidget, ControlWidget
+from src.math.implicit_functions import FUNCS
 
 
 class PlotFunc(QWidget):
@@ -41,37 +42,54 @@ class PlotFunc(QWidget):
         self.renderer = self.vtk_widget.renderer
         self.renderer.SetBackground(colors.GetColor3d("dark_blue"))
         self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        # Create an axes actor
+        self.math_axes = create_axes()
 
         # Initialize bounds
         self.x_min, self.x_max = X_MIN, X_MAX
         self.y_min, self.y_max = Y_MIN, Y_MAX
         self.z_min, self.z_max = Z_MIN, Z_MAX
 
-        # Add range sliders and button to the control widget
+        # Initialize coefficients
+        self.coeff_a = 1
+        self.coeff_b = 1
+        self.coeff_c = 1
+        self.implicit_function = FUNCS["Custom"](
+            self.coeff_a, self.coeff_b, self.coeff_c
+        )
+
+        # Populate the control widget
         self.control_widget.add_range_sliders(
             (self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max),
             self.update_function,
+        )
+        self.control_widget.add_dropdown(
+            "Implicit Function",
+            FUNCS.keys(),
+            lambda idx: (
+                setattr(
+                    self,
+                    "implicit_function",
+                    FUNCS[list(FUNCS.keys())[idx]](
+                        self.coeff_a, self.coeff_b, self.coeff_c
+                    )
+                ),
+                self.update_function()
+            ),
         )
         self.control_widget.add_button(
             "Toggle Axes Visibility",
             lambda: toggle_visibility(self.vtk_widget, self.math_axes),
         )
 
-        # Add the control and the rendering layout to the main layout
+        # Add the control and the rendering widgets to the main layout
         self.layout.addWidget(self.control_widget)
         self.layout.addWidget(self.vtk_widget, stretch=1)
 
-        # Set the layout on the parent widget
-        self.setLayout(self.layout)
-
-        # Add axes
-        self.math_axes = create_axes()
-        self.renderer.AddActor(self.math_axes)
-
-        # Add function
+        # Update the function, initialize the renderer, and render the scene
         self.update_function()
-
-        # Initialize the interactor
         set_mathematical_view(self.renderer)
         self.vtk_widget.get_render_window().Render()
         self.vtk_widget.interactor.Initialize()
@@ -81,11 +99,8 @@ class PlotFunc(QWidget):
         self.y_min, self.y_max = self.control_widget.y_slider.getRange()
         self.z_min, self.z_max = self.control_widget.z_slider.getRange()
 
-        def implicit_equation(x, y, z):
-            return x**2 + y**2 - z**2 - 1
-
         surface_actor = create_implicit_surface_actor(
-            implicit_equation,
+            self.implicit_function,
             (self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max),
         )
         set_z_gradient_coloring(

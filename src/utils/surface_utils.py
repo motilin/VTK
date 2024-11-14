@@ -42,6 +42,10 @@ def create_implicit_surface_actor(
     # Evaluate the implicit function
     scalars = implicit_function(X, Y, Z)
 
+    # if scalars (a 3D numpy array) is empty, return vtk.vtkActor()
+    if scalars.size == 0:
+        return vtk.vtkActor()
+
     # Create VTK structured points dataset
     volume = vtk.vtkStructuredPoints()
     volume.SetDimensions(sample_dims)
@@ -114,6 +118,10 @@ def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1)):
 
     # Now get points after ensuring pipeline execution
     points = polydata.GetPoints()
+    if not points:
+        return actor 
+   
+    # Get number of points 
     n_points = points.GetNumberOfPoints()
 
     # Create array for colors
