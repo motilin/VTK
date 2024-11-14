@@ -10,6 +10,7 @@ WINDOW_HEIGHT = 1200
 AXES_LENGTH = 5
 X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX = -10, 10, -10, 10, -10, 10
 CONTROL_PANEL_WIDTH = 300
+CONTROL_PANEL_SPACING = 20
 
 """
 Carefully curated color palette for mathematical surfaces.

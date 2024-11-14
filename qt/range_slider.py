@@ -8,8 +8,9 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QRect, QSize
 from PyQt5.QtGui import QPainter, QBrush, QPalette, QPaintEvent, QMouseEvent
-from PyQt5.QtWidgets import QStyle, QStyleOptionSlider
+from PyQt5.QtWidgets import QStyle, QStyleOptionSlider, QGridLayout
 from PyQt5.QtCore import pyqtSignal
+from src.core.constants import CONTROL_PANEL_SPACING
 
 class RangeSlider(QWidget):
     valueChanged = pyqtSignal()
@@ -209,34 +210,41 @@ class RangeSlider(QWidget):
             .expandedTo(QApplication.globalStrut())
         )
 
-def add_range_sliders(widget, bounds, layout):
-    # Create a vertical layout for the sliders
-    slider_layout = QVBoxLayout()
+def add_range_sliders(widget, bounds, layout, update_callback):
+    # Create a grid layout for the sliders
+    slider_layout = QGridLayout()
+    slider_layout.setSpacing(CONTROL_PANEL_SPACING)
 
     # X-axis slider
+    x_label = QLabel("X Range")
     widget.x_slider = RangeSlider()
     widget.x_slider.setRangeLimit(int(bounds[0]), int(bounds[1]))
     widget.x_slider.setRange(int(bounds[0]), int(bounds[1]))
-    slider_layout.addWidget(QLabel("X Range"))
+    x_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+    slider_layout.addWidget(x_label)
     slider_layout.addWidget(widget.x_slider)
 
     # Y-axis slider
+    y_label = QLabel("Y Range")
     widget.y_slider = RangeSlider()
     widget.y_slider.setRangeLimit(int(bounds[2]), int(bounds[3]))
     widget.y_slider.setRange(int(bounds[2]), int(bounds[3]))
-    slider_layout.addWidget(QLabel("Y Range"))
+    y_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+    slider_layout.addWidget(y_label)
     slider_layout.addWidget(widget.y_slider)
 
     # Z-axis slider
+    z_label = QLabel("Z Range")
     widget.z_slider = RangeSlider()
     widget.z_slider.setRangeLimit(int(bounds[4]), int(bounds[5]))
     widget.z_slider.setRange(int(bounds[4]), int(bounds[5]))
-    slider_layout.addWidget(QLabel("Z Range"))
+    z_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+    slider_layout.addWidget(z_label)
     slider_layout.addWidget(widget.z_slider)
 
-    # Connect slider value changes to the update_function method
-    widget.x_slider.valueChanged.connect(widget.update_function)
-    widget.y_slider.valueChanged.connect(widget.update_function)
-    widget.z_slider.valueChanged.connect(widget.update_function)
+    # Connect slider value changes to the update_callback method
+    widget.x_slider.valueChanged.connect(update_callback)
+    widget.y_slider.valueChanged.connect(update_callback)
+    widget.z_slider.valueChanged.connect(update_callback)
 
     layout.addLayout(slider_layout)
