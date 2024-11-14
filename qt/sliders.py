@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QWidget,
     QSlider,
-    QHBoxLayout,
+    QVBoxLayout,
     QLabel,
 )
 from PyQt5.QtCore import Qt, QRect, QSize
@@ -209,9 +209,9 @@ class RangeSlider(QWidget):
             .expandedTo(QApplication.globalStrut())
         )
 
-def add_range_sliders(widget, bounds):
-    # Create a horizontal layout for the sliders
-    slider_layout = QHBoxLayout()
+def add_range_sliders(widget, bounds, layout):
+    # Create a vertical layout for the sliders
+    slider_layout = QVBoxLayout()
 
     # X-axis slider
     widget.x_slider = RangeSlider()
@@ -239,4 +239,4 @@ def add_range_sliders(widget, bounds):
     widget.y_slider.valueChanged.connect(widget.update_function)
     widget.z_slider.valueChanged.connect(widget.update_function)
 
-    widget.layout.addLayout(slider_layout)
+    layout.addLayout(slider_layout)
