@@ -10,16 +10,11 @@ from PyQt5.QtWidgets import (
     QApplication,
     QHBoxLayout,
     QLabel,
-    QSizePolicy,
     QPushButton,
-    QSlider,
 )
-from PyQt5.QtCore import Qt, QRect, QSize
-from PyQt5.QtWidgets import QStyle, QStyleOptionSlider
 import vtk
 from qt.main_window import VTKMainWindow
 from qt.callbacks import toggle_visibility
-from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from src.core.visualization import set_mathematical_view
 from src.core.constants import WINDOW_WIDTH, WINDOW_HEIGHT, colors
 from src.utils.surface_utils import (

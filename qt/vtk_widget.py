@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
 
 import vtk
 from qt.callbacks import toggle_visibility
-from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from src.core.visualization import configure_window, set_mathematical_view
 from src.core.constants import WINDOW_WIDTH, WINDOW_HEIGHT, colors
 from src.core import CustomInteractorStyle
