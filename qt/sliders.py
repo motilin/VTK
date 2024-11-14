@@ -3,12 +3,13 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QWidget,
     QSlider,
+    QHBoxLayout,
+    QLabel,
 )
 from PyQt5.QtCore import Qt, QRect, QSize
 from PyQt5.QtGui import QPainter, QBrush, QPalette, QPaintEvent, QMouseEvent
 from PyQt5.QtWidgets import QStyle, QStyleOptionSlider
 from PyQt5.QtCore import pyqtSignal
-
 
 class RangeSlider(QWidget):
     valueChanged = pyqtSignal()
@@ -207,3 +208,35 @@ class RangeSlider(QWidget):
             .sizeFromContents(QStyle.CT_Slider, self.opt, QSize(w, h), self)
             .expandedTo(QApplication.globalStrut())
         )
+
+def add_range_sliders(widget, bounds):
+    # Create a horizontal layout for the sliders
+    slider_layout = QHBoxLayout()
+
+    # X-axis slider
+    widget.x_slider = RangeSlider()
+    widget.x_slider.setRangeLimit(int(bounds[0]), int(bounds[1]))
+    widget.x_slider.setRange(int(bounds[0]), int(bounds[1]))
+    slider_layout.addWidget(QLabel("X Range"))
+    slider_layout.addWidget(widget.x_slider)
+
+    # Y-axis slider
+    widget.y_slider = RangeSlider()
+    widget.y_slider.setRangeLimit(int(bounds[2]), int(bounds[3]))
+    widget.y_slider.setRange(int(bounds[2]), int(bounds[3]))
+    slider_layout.addWidget(QLabel("Y Range"))
+    slider_layout.addWidget(widget.y_slider)
+
+    # Z-axis slider
+    widget.z_slider = RangeSlider()
+    widget.z_slider.setRangeLimit(int(bounds[4]), int(bounds[5]))
+    widget.z_slider.setRange(int(bounds[4]), int(bounds[5]))
+    slider_layout.addWidget(QLabel("Z Range"))
+    slider_layout.addWidget(widget.z_slider)
+
+    # Connect slider value changes to the update_function method
+    widget.x_slider.valueChanged.connect(widget.update_function)
+    widget.y_slider.valueChanged.connect(widget.update_function)
+    widget.z_slider.valueChanged.connect(widget.update_function)
+
+    widget.layout.addLayout(slider_layout)

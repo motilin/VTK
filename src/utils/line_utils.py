@@ -1,7 +1,8 @@
 import vtk
+from src.core.constants import AXES_LENGTH
 
 
-def create_axes(length=5, line_width=0.5, font_size=24, cone_radius=0.2):
+def create_axes(length=AXES_LENGTH, line_width=0.5, font_size=24, cone_radius=0.2):
     """
     Creates coordinate axes with larger labels and smaller arrow heads
     Parameters:
