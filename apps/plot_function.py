@@ -56,14 +56,36 @@ class PlotFunc(QWidget):
         self.coeff_a = 1
         self.coeff_b = 1
         self.coeff_c = 1
-        self.implicit_function = FUNCS["Custom"](
-            self.coeff_a, self.coeff_b, self.coeff_c
-        )
+        self.func_name = list(FUNCS.keys())[0]
 
         # Populate the control widget
         self.control_widget.add_range_sliders(
             (self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max),
             self.update_function,
+        )
+        self.control_widget.add_slider(
+            (-3, 3),
+            "a",
+            lambda val: (
+                setattr(self, "coeff_a", val),
+                self.update_function(),
+            ),
+        )
+        self.control_widget.add_slider(
+            (-3, 3),
+            "b",
+            lambda val: (
+                setattr(self, "coeff_b", val),
+                self.update_function(),
+            ),
+        )
+        self.control_widget.add_slider(
+            (-3, 3),
+            "c",
+            lambda val: (
+                setattr(self, "coeff_c", val),
+                self.update_function(),
+            ),
         )
         self.control_widget.add_dropdown(
             "Implicit Function",
@@ -71,12 +93,10 @@ class PlotFunc(QWidget):
             lambda idx: (
                 setattr(
                     self,
-                    "implicit_function",
-                    FUNCS[list(FUNCS.keys())[idx]](
-                        self.coeff_a, self.coeff_b, self.coeff_c
-                    )
+                    "func_name",
+                    list(FUNCS.keys())[idx],
                 ),
-                self.update_function()
+                self.update_function(),
             ),
         )
         self.control_widget.add_button(
@@ -100,7 +120,7 @@ class PlotFunc(QWidget):
         self.z_min, self.z_max = self.control_widget.z_slider.getRange()
 
         surface_actor = create_implicit_surface_actor(
-            self.implicit_function,
+            FUNCS[self.func_name](self.coeff_a, self.coeff_b, self.coeff_c),
             (self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max),
         )
         set_z_gradient_coloring(

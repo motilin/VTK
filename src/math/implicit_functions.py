@@ -1,3 +1,5 @@
+import math
+
 def SURFACE(a, b, c):
     return lambda x, y, z: x**2 / a**2 - z / c
 
@@ -27,7 +29,7 @@ def HYPERBOLID_OF_TWO_SHEETS(a, b, c):
 
 
 def CUSTOM(a, b, c):
-    return lambda x, y, z: x**2 / a**2 + y**2 / b**2 + z**2 / c**2 - 1
+    return lambda x, y, z: x**2 / a**2 + y**2 / b**2 - 1
 
 
 FUNCS = {
