@@ -7,7 +7,7 @@ This project provides a framework for visualizing quadratic surfaces using VTK (
 ## Project Structure
 
 ```
-quadratic_surface/
+VTK/
 │
 ├── src/
 │   ├── __init__.py
@@ -20,16 +20,28 @@ quadratic_surface/
 │   │   ├── __init__.py
 │   │   ├── surface_utils.py
 │   │   └── trace_utils.py
+│   ├── math/
+│   │   ├── __init__.py
+│   │   └── implicit_functions.py
 │   └── widgets/
 │       ├── __init__.py
 │       └── sliders.py
 │
-├── examples/
-│   └── cylinder_example.py
+├── applications/
+│   └── plot_function.py
+│
+├── qt/
+│   ├── __init__.py
+│   ├── main_window.py
+│   ├── range_slider.py
+│   └── widgets.py
+│
+├── .vscode/
+│   └── launch.json
 │
 ├── README.md
-└── requirements.txt
-
+├── requirements.txt
+└── Dockerfile
 ```
 
 ### Directories and Files
@@ -37,10 +49,14 @@ quadratic_surface/
 - **src/**: Contains the main source code for the framework.
   - **core/**: Core functionalities such as constants, interactor styles, and visualization setup.
   - **utils/**: Utility functions for surface and trace line creation.
+  - **math/**: Mathematical functions defining implicit surfaces.
   - **widgets/**: Custom slider widgets and their callbacks.
-- **examples/**: Example scripts demonstrating how to use the framework.
+- **applications/**: Application scripts for specific visualizations.
+- **qt/**: Qt-based GUI components including main window, range sliders, and widgets.
+- **.vscode/**: Configuration for Visual Studio Code debugging.
 - **README.md**: Project documentation.
 - **requirements.txt**: List of dependencies required to run the project.
+- **Dockerfile**: Docker configuration for containerized deployment.
 
 ## Dependencies
 
@@ -50,25 +66,58 @@ The project requires the following Python packages:
 - `sympy>=1.8`
 - `numpy>=1.19.0`
 - `rich>=10.0.0`
+- `PyQt5>=5.15.0`
+- `vtkmodules>=9.0.0`
 
 You can install the dependencies using the following command:
 
 ```sh
 pip install -r requirements.txt
-
 ```
+
+## Installation using Conda
+
+To install the package using conda, follow these steps:
+
+1. Create a new conda environment:
+
+    ```sh
+    conda create -n vtk_env python=3.9
+    ```
+
+2. Activate the conda environment:
+
+    ```sh
+    conda activate vtk_env
+    ```
+
+3. Install the required packages:
+
+    ```sh
+    conda install -c conda-forge vtk sympy numpy rich pyqt
+    ```
+
+4. Install additional packages using pip:
+
+    ```sh
+    pip install vtkmodules
+    ```
 
 ## Usage
 
-### Example: Cylinder Visualization
+### Main Application: Function Plotter
 
-The `applications/cylinder_example.py` script demonstrates how to use the framework to visualize a cylinder with interactive sliders for color, resolution, and height/width ratio.
+The main application script `applications/plot_function.py` provides an interactive interface for visualizing various implicit functions. The output includes a 3D plot of the selected function with adjustable parameters and visualization options.
 
-To run the example, use the following command:
+To run the main application, use the following command:
 
 ```sh
-python applications/cylinder_example.py
+python applications/plot_function.py
 ```
+
+### Functions
+
+The implicit functions used in the visualization are defined in the `src/math/implicit_functions.py` file. These functions are mathematical equations that define surfaces in 3D space. You can modify or add new functions to this file to extend the visualization capabilities.
 
 ### Key Components
 
@@ -101,4 +150,4 @@ This project uses the following libraries and frameworks:
 - [SymPy](https://www.sympy.org/)
 - [NumPy](https://numpy.org/)
 - [Rich](https://github.com/willmcgugan/rich)
-```
+- [PyQt5](https://www.riverbankcomputing.com/software/pyqt/intro)

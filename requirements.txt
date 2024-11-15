@@ -2,3 +2,5 @@ vtk>=9.0.0
 sympy>=1.8
 numpy>=1.19.0
 rich>=10.0.0
+PyQt5>=5.15.0
+vtkmodules>=9.0.0
