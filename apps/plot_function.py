@@ -70,7 +70,8 @@ class PlotFunc(QWidget):
             self.update_function,
         )
         self.control_widget.add_slider(
-            (-3, 3), 1,
+            (-3, 3),
+            1,
             "a",
             lambda val: (
                 setattr(self, "coeff_a", val),
@@ -78,7 +79,8 @@ class PlotFunc(QWidget):
             ),
         )
         self.control_widget.add_slider(
-            (-3, 3), 1,
+            (-3, 3),
+            1,
             "b",
             lambda val: (
                 setattr(self, "coeff_b", val),
@@ -86,7 +88,8 @@ class PlotFunc(QWidget):
             ),
         )
         self.control_widget.add_slider(
-            (-3, 3), 1,
+            (-3, 3),
+            1,
             "c",
             lambda val: (
                 setattr(self, "coeff_c", val),
@@ -106,7 +109,8 @@ class PlotFunc(QWidget):
             ),
         )
         self.control_widget.add_slider(
-            (0.1, 3), 1,
+            (0.1, 3),
+            1,
             "Trace Spacing",
             lambda val: (
                 setattr(self, "trace_spacing", val),
@@ -138,11 +142,13 @@ class PlotFunc(QWidget):
             ),
         )
         # parse the custom function string as a python code and set it to self.custom_func
-        self.control_widget.add_textbox("Custom Function:", lambda text: (
-            setattr(self, "custom_func", text),
-            self.update_function(),
-        ))
-
+        self.control_widget.add_textbox(
+            "Custom Function:",
+            lambda text: (
+                setattr(self, "custom_func", text),
+                self.update_function(),
+            ),
+        )
 
         # Add the control and the rendering widgets to the main layout
         self.layout.addWidget(self.control_widget)
