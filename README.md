@@ -36,9 +36,6 @@ VTK/
 │   ├── range_slider.py
 │   └── widgets.py
 │
-├── .vscode/
-│   └── launch.json
-│
 ├── README.md
 ├── requirements.txt
 └── Dockerfile
@@ -53,7 +50,6 @@ VTK/
   - **widgets/**: Custom slider widgets and their callbacks.
 - **applications/**: Application scripts for specific visualizations.
 - **qt/**: Qt-based GUI components including main window, range sliders, and widgets.
-- **.vscode/**: Configuration for Visual Studio Code debugging.
 - **README.md**: Project documentation.
 - **requirements.txt**: List of dependencies required to run the project.
 - **Dockerfile**: Docker configuration for containerized deployment.

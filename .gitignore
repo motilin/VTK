@@ -57,6 +57,9 @@ venv.bak/
 # VS Code
 .vscode/
 
+.gitingore
+Dockerfile
+
 # PyCharm
 .idea/
 
