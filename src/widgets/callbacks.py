@@ -2,7 +2,7 @@
 Callback definitions for widget interactions.
 """
 
-from ..core.constants import colors
+from ..core.constants import COLORS
 
 
 class SliderCallbacks:

@@ -1,5 +1,13 @@
 import math
 
+"""
+Implicit functions are mathematical equations that define a surface in a 3D space.
+The surface is defined by the zero set of the function, i.e., the set of points
+where the function evaluates to zero. The implicit function can be defined by
+a lambda function that takes three arguments x, y, z and returns the value of the
+function at the given point.
+"""
+
 def SURFACE(a, b, c):
     return lambda x, y, z: x**2 / a**2 - z / c
 

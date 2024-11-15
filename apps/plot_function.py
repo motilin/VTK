@@ -12,10 +12,9 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 from qt.main_window import VTKMainWindow
-from qt.callbacks import toggle_visibility
 from src.core.visualization import set_mathematical_view
 from src.core.constants import (
-    colors,
+    COLORS,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
     X_MIN,
@@ -26,10 +25,10 @@ from src.core.constants import (
     Z_MAX,
 )
 from src.utils.surface_utils import (
-    create_implicit_surface_actor,
+    create_func_surface_actor,
     set_z_gradient_coloring,
 )
-from src.utils.line_utils import create_axes
+from src.utils.line_utils import create_axes, create_func_traces_actor
 from qt.widgets import VTKWidget, ControlWidget
 from src.math.implicit_functions import FUNCS
 
@@ -40,7 +39,7 @@ class PlotFunc(QWidget):
         self.vtk_widget = VTKWidget(self)
         self.control_widget = ControlWidget(self)
         self.renderer = self.vtk_widget.renderer
-        self.renderer.SetBackground(colors.GetColor3d("dark_blue"))
+        self.renderer.SetBackground(COLORS.GetColor3d("dark_blue"))
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
@@ -56,7 +55,13 @@ class PlotFunc(QWidget):
         self.coeff_a = 1
         self.coeff_b = 1
         self.coeff_c = 1
+
+        # Initialize function name and visibitliy
         self.func_name = list(FUNCS.keys())[0]
+        self.show_traces = True
+        self.show_surface = True
+        self.show_axes = True
+        self.trace_spacing = 1
 
         # Populate the control widget
         self.control_widget.add_range_sliders(
@@ -64,7 +69,7 @@ class PlotFunc(QWidget):
             self.update_function,
         )
         self.control_widget.add_slider(
-            (-3, 3),
+            (-3, 3), 1,
             "a",
             lambda val: (
                 setattr(self, "coeff_a", val),
@@ -72,7 +77,7 @@ class PlotFunc(QWidget):
             ),
         )
         self.control_widget.add_slider(
-            (-3, 3),
+            (-3, 3), 1,
             "b",
             lambda val: (
                 setattr(self, "coeff_b", val),
@@ -80,7 +85,7 @@ class PlotFunc(QWidget):
             ),
         )
         self.control_widget.add_slider(
-            (-3, 3),
+            (-3, 3), 1,
             "c",
             lambda val: (
                 setattr(self, "coeff_c", val),
@@ -99,10 +104,36 @@ class PlotFunc(QWidget):
                 self.update_function(),
             ),
         )
-        self.control_widget.add_button(
-            "Toggle Axes Visibility",
-            lambda: toggle_visibility(self.vtk_widget, self.math_axes),
+        self.control_widget.add_slider(
+            (0.1, 3), 1,
+            "Trace Spacing",
+            lambda val: (
+                setattr(self, "trace_spacing", val),
+                self.update_function(),
+            ),
         )
+        self.control_widget.add_checkbox(
+            "Surface",
+            lambda state: (
+                setattr(self, "show_surface", state),
+                self.update_function(),
+            ),
+        )
+        self.control_widget.add_checkbox(
+            "Traces",
+            lambda state: (
+                setattr(self, "show_traces", state),
+                self.update_function(),
+            ),
+        )
+        self.control_widget.add_checkbox(
+            "Axes",
+            lambda state: (
+                setattr(self, "show_axes", state),
+                self.update_function(),
+            ),
+        )
+
 
         # Add the control and the rendering widgets to the main layout
         self.layout.addWidget(self.control_widget)
@@ -118,18 +149,42 @@ class PlotFunc(QWidget):
         self.x_min, self.x_max = self.control_widget.x_slider.getRange()
         self.y_min, self.y_max = self.control_widget.y_slider.getRange()
         self.z_min, self.z_max = self.control_widget.z_slider.getRange()
-
-        surface_actor = create_implicit_surface_actor(
-            FUNCS[self.func_name](self.coeff_a, self.coeff_b, self.coeff_c),
-            (self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max),
-        )
-        set_z_gradient_coloring(
-            surface_actor, colors.GetColor3d("emerald"), colors.GetColor3d("coral")
-        )
-
         self.renderer.RemoveAllViewProps()
-        self.renderer.AddActor(self.math_axes)
-        self.renderer.AddActor(surface_actor)
+        
+        if self.show_axes:
+            self.renderer.AddActor(self.math_axes)
+
+        if self.show_surface:
+            surface_actor = create_func_surface_actor(
+                FUNCS[self.func_name](self.coeff_a, self.coeff_b, self.coeff_c),
+                (
+                    self.x_min,
+                    self.x_max,
+                    self.y_min,
+                    self.y_max,
+                    self.z_min,
+                    self.z_max,
+                ),
+            )
+            set_z_gradient_coloring(
+                surface_actor, COLORS.GetColor3d("emerald"), COLORS.GetColor3d("coral")
+            )
+            self.renderer.AddActor(surface_actor)
+        if self.show_traces:
+            traces_actor = create_func_traces_actor(
+                FUNCS[self.func_name](self.coeff_a, self.coeff_b, self.coeff_c),
+                (
+                    self.x_min,
+                    self.x_max,
+                    self.y_min,
+                    self.y_max,
+                    self.z_min,
+                    self.z_max,
+                ),
+                self.trace_spacing,
+            )
+            self.renderer.AddActor(traces_actor)
+
         self.vtk_widget.get_render_window().Render()
 
 

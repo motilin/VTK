@@ -18,12 +18,13 @@ The vtkNamedColors object contains the defined colors.
 To access it use: colors.GetColor3d("color_name")
 """
 
-colors = vtkNamedColors()
+COLORS = vtkNamedColors()
 
 # Basic colors
 dark_blue = map(lambda x: x / 255.0, [26, 51, 102, 255])
 blue = map(lambda x: x / 255.0, [0, 0, 255, 255])
 red = map(lambda x: x / 255.0, [255, 0, 0, 255])
+charcoal = map(lambda x: x / 255.0, [44, 54, 64, 255])
 
 # Deep blues and teals
 deep_azure = map(lambda x: x / 255.0, [0, 127, 255, 255])  # Rich blue
@@ -52,22 +53,22 @@ platinum = map(lambda x: x / 255.0, [229, 228, 226, 255])  # Light metallic
 bronze = map(lambda x: x / 255.0, [205, 127, 50, 255])  # Warm metallic
 
 # Set all colors
-colors.SetColor("deep_azure", *deep_azure)
-colors.SetColor("midnight_blue", *midnight_blue)
-colors.SetColor("teal", *teal)
-colors.SetColor("prussian_blue", *prussian_blue)
-colors.SetColor("royal_purple", *royal_purple)
-colors.SetColor("deep_magenta", *deep_magenta)
-colors.SetColor("lavender", *lavender)
-colors.SetColor("burgundy", *burgundy)
-colors.SetColor("coral", *coral)
-colors.SetColor("amber", *amber)
-colors.SetColor("emerald", *emerald)
-colors.SetColor("sage", *sage)
-colors.SetColor("forest_green", *forest_green)
-colors.SetColor("gunmetal", *gunmetal)
-colors.SetColor("platinum", *platinum)
-colors.SetColor("bronze", *bronze)
-colors.SetColor("dark_blue", *dark_blue)
-colors.SetColor("blue", *blue)
-colors.SetColor("red", *red)
+COLORS.SetColor("deep_azure", *deep_azure)
+COLORS.SetColor("midnight_blue", *midnight_blue)
+COLORS.SetColor("teal", *teal)
+COLORS.SetColor("prussian_blue", *prussian_blue)
+COLORS.SetColor("royal_purple", *royal_purple)
+COLORS.SetColor("deep_magenta", *deep_magenta)
+COLORS.SetColor("lavender", *lavender)
+COLORS.SetColor("burgundy", *burgundy)
+COLORS.SetColor("coral", *coral)
+COLORS.SetColor("amber", *amber)
+COLORS.SetColor("emerald", *emerald)
+COLORS.SetColor("sage", *sage)
+COLORS.SetColor("forest_green", *forest_green)
+COLORS.SetColor("gunmetal", *gunmetal)
+COLORS.SetColor("platinum", *platinum)
+COLORS.SetColor("bronze", *bronze)
+COLORS.SetColor("dark_blue", *dark_blue)
+COLORS.SetColor("blue", *blue)
+COLORS.SetColor("red", *red)

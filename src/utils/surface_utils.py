@@ -1,11 +1,11 @@
 import sympy as sp
 import numpy as np
 import vtk
-from src.core.constants import colors
+from src.core.constants import COLORS
 import math
 
 
-def create_implicit_surface_actor(
+def create_func_surface_actor(
     implicit_function,
     bounds=(-10, 10, -10, 10, -10, 10),
     sample_dims=(100, 100, 100),
@@ -42,10 +42,6 @@ def create_implicit_surface_actor(
     # Evaluate the implicit function
     scalars = implicit_function(X, Y, Z)
 
-    # if scalars (a 3D numpy array) is empty, return vtk.vtkActor()
-    if scalars.size == 0:
-        return vtk.vtkActor()
-
     # Create VTK structured points dataset
     volume = vtk.vtkStructuredPoints()
     volume.SetDimensions(sample_dims)
@@ -68,6 +64,11 @@ def create_implicit_surface_actor(
     contours = vtk.vtkContourFilter()
     contours.SetInputData(volume)
     contours.SetValue(0, iso_value)
+    contours.Update()
+    
+    contour_output = contours.GetOutput()
+    if contour_output.GetNumberOfPoints() == 0:
+        return vtk.vtkActor()
 
     # Optional: Add smoothing for better visual quality
     smoother = vtk.vtkWindowedSincPolyDataFilter()
@@ -79,6 +80,7 @@ def create_implicit_surface_actor(
     smoother.SetPassBand(0.1)
     smoother.NonManifoldSmoothingOn()
     smoother.NormalizeCoordinatesOn()
+    smoother.Update()
 
     # Create mapper
     mapper = vtk.vtkPolyDataMapper()
@@ -107,6 +109,8 @@ def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1)):
     """
     # Get the mapper and ensure the pipeline is updated
     mapper = actor.GetMapper()
+    if not mapper:
+        return actor
     mapper.Update()
 
     # Get the polydata after pipeline execution
@@ -119,9 +123,9 @@ def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1)):
     # Now get points after ensuring pipeline execution
     points = polydata.GetPoints()
     if not points:
-        return actor 
-   
-    # Get number of points 
+        return actor
+
+    # Get number of points
     n_points = points.GetNumberOfPoints()
 
     # Create array for colors

@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QSlider,
+    QCheckBox,
 )
 from PyQt5.QtCore import Qt
 import vtk
@@ -46,7 +47,7 @@ class ControlWidget(QWidget):
         self.setFixedWidth(CONTROL_PANEL_WIDTH)
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
 
-    def add_slider(self, bounds, text, update_callback):
+    def add_slider(self, bounds, value, text, update_callback):
         label = QLabel(text, self)
         label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # Prevent label from expanding
         
@@ -55,6 +56,7 @@ class ControlWidget(QWidget):
         slider = QSlider(Qt.Horizontal, self)
         slider.setMinimum(int(bounds[0] * SCALE_FACTOR))
         slider.setMaximum(int(bounds[1] * SCALE_FACTOR))
+        slider.setValue(int(value * SCALE_FACTOR))
         
         def scaled_callback(value):
             # Convert the integer value back to float with 0.01 precision
@@ -96,3 +98,11 @@ class ControlWidget(QWidget):
         dropdown_layout.addWidget(label, alignment=Qt.AlignLeft)
         dropdown_layout.addWidget(dropdown, alignment=Qt.AlignLeft)
         self.layout.addLayout(dropdown_layout)
+    
+    def add_checkbox(self, text, callback):
+        checkbox = QCheckBox(text, self)
+        checkbox.stateChanged.connect(callback)
+        checkbox.setChecked(True)
+        checkbox_layout = QHBoxLayout()
+        checkbox_layout.addWidget(checkbox, alignment=Qt.AlignTop)
+        self.layout.addLayout(checkbox_layout)
