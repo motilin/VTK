@@ -7,6 +7,7 @@ def custom_function(a, b, c):
         exec(func_code, globals())
         func = globals()['custom_function']
         return func
-    except (SyntaxError, NameError, TypeError) as e:
+    except Exception as e:
         print(f"Error: {e}")
         return None
+

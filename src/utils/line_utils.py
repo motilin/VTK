@@ -130,7 +130,12 @@ def evaluate_function_on_points(points, implicit_func):
     Returns:
         numpy array of function values
     """
-    return implicit_func(points[:, 0], points[:, 1], points[:, 2])
+    try:
+        values = implicit_func(points[:, 0], points[:, 1], points[:, 2])
+        return values
+    except Exception as e:
+        print(f"Error: {e}")
+        return np.ones(len(points))
 
 
 def create_contour_polydata(points, values, resolution):

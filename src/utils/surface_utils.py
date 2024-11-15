@@ -40,7 +40,11 @@ def create_func_surface_actor(
     X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
     # Evaluate the implicit function
-    scalars = implicit_function(X, Y, Z)
+    try:
+        scalars = implicit_function(X, Y, Z)
+    except Exception as e:
+        print(f"Error: {e}")
+        return vtk.vtkActor()
 
     # Create VTK structured points dataset
     volume = vtk.vtkStructuredPoints()
