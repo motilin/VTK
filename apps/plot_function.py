@@ -31,6 +31,7 @@ from src.utils.surface_utils import (
 from src.utils.line_utils import create_axes, create_func_traces_actor
 from qt.widgets import VTKWidget, ControlWidget
 from src.math.implicit_functions import FUNCS
+from src.math.func_utils import parse_function
 
 
 class PlotFunc(QWidget):
@@ -57,10 +58,10 @@ class PlotFunc(QWidget):
         self.coeff_c = 1
 
         # Initialize function name and visibitliy
+        self.custom_func = None
         self.func_name = list(FUNCS.keys())[0]
         self.show_traces = True
-        self.show_surface = True
-        self.show_axes = True
+        self.show_surface = False
         self.trace_spacing = 1
 
         # Populate the control widget
@@ -114,6 +115,7 @@ class PlotFunc(QWidget):
         )
         self.control_widget.add_checkbox(
             "Surface",
+            False,
             lambda state: (
                 setattr(self, "show_surface", state),
                 self.update_function(),
@@ -121,6 +123,7 @@ class PlotFunc(QWidget):
         )
         self.control_widget.add_checkbox(
             "Traces",
+            True,
             lambda state: (
                 setattr(self, "show_traces", state),
                 self.update_function(),
@@ -128,11 +131,17 @@ class PlotFunc(QWidget):
         )
         self.control_widget.add_checkbox(
             "Axes",
+            True,
             lambda state: (
-                setattr(self, "show_axes", state),
-                self.update_function(),
+                self.math_axes.SetVisibility(state),
+                self.vtk_widget.get_render_window().Render(),
             ),
         )
+        # parse the custom function string as a python code and set it to self.custom_func
+        self.control_widget.add_textbox("Custom Function:", lambda text: (
+            setattr(self, "custom_func", text),
+            self.update_function(),
+        ))
 
 
         # Add the control and the rendering widgets to the main layout
@@ -150,13 +159,19 @@ class PlotFunc(QWidget):
         self.y_min, self.y_max = self.control_widget.y_slider.getRange()
         self.z_min, self.z_max = self.control_widget.z_slider.getRange()
         self.renderer.RemoveAllViewProps()
-        
-        if self.show_axes:
-            self.renderer.AddActor(self.math_axes)
+        self.renderer.AddActor(self.math_axes)
+
+        func = FUNCS[self.func_name]
+        if self.func_name == "Custom" and self.custom_func:
+            try:
+                parsed = parse_function(self.custom_func)
+                func = parsed if parsed else func
+            except Exception as e:
+                pass
 
         if self.show_surface:
             surface_actor = create_func_surface_actor(
-                FUNCS[self.func_name](self.coeff_a, self.coeff_b, self.coeff_c),
+                func(self.coeff_a, self.coeff_b, self.coeff_c),
                 (
                     self.x_min,
                     self.x_max,
@@ -172,7 +187,7 @@ class PlotFunc(QWidget):
             self.renderer.AddActor(surface_actor)
         if self.show_traces:
             traces_actor = create_func_traces_actor(
-                FUNCS[self.func_name](self.coeff_a, self.coeff_b, self.coeff_c),
+                func(self.coeff_a, self.coeff_b, self.coeff_c),
                 (
                     self.x_min,
                     self.x_max,
