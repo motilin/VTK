@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 from qt.main_window import VTKMainWindow
-from src.core.visualization import set_mathematical_view
+from src.core.interactor import set_mathematical_view
 from src.core.constants import (
     COLORS,
     WINDOW_WIDTH,
