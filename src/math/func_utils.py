@@ -1,3 +1,4 @@
+import re
 from numpy import (
     pi,
     sin,
@@ -18,6 +19,8 @@ from numpy import (
 )
 
 def parse_function(text):
+    text = text.replace("^", "**")
+    text = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', text)
     try:
         func_code = f"""
 def custom_function(a, b, c):                    
