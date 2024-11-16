@@ -33,7 +33,7 @@ class VTKWidget(QWidget):
         self.vtk_widget.GetRenderWindow().AddRenderer(self.renderer)
         self.interactor = self.vtk_widget.GetRenderWindow().GetInteractor()
 
-        style = CustomInteractorStyle()
+        style = CustomInteractorStyle(self.renderer)
         self.interactor.SetInteractorStyle(style)
 
     def get_render_window(self):

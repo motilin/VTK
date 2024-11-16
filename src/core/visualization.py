@@ -16,8 +16,8 @@ def setup_renderer():
     iren.SetRenderWindow(renWin)
 
     # Set up interactor style
-    style = CustomInteractorStyle()
-    iren.SetInteractorStyle(style)
+    # style = CustomInteractorStyle()
+    # iren.SetInteractorStyle(style)
 
     return ren, renWin, iren
 

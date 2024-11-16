@@ -4,13 +4,17 @@ Custom interactor styles and related functionality.
 
 import vtk
 import sys
+from vtk import vtkGL2PSExporter
 
 
 # Define the custom interactor style
 class CustomInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
-    def __init__(self):
+    def __init__(self, renderer):
         super().__init__()
-        self.AddObserver(vtk.vtkCommand.LeftButtonPressEvent, self.left_button_press_event)
+        self.renderer = renderer
+        self.AddObserver(
+            vtk.vtkCommand.LeftButtonPressEvent, self.left_button_press_event
+        )
         self.AddObserver(vtk.vtkCommand.KeyPressEvent, self.on_key_press_event)
 
     def left_button_press_event(self, obj, event):
@@ -24,9 +28,11 @@ class CustomInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
             self.GetInteractor().TerminateApp()
             sys.exit(0)
         if key == "r":
-            set_mathematical_view(self.GetCurrentRenderer())
-            
-            
+            set_mathematical_view(self.renderer)
+        if key == "p":
+            export_pdf(self.renderer, "output")
+
+
 def set_mathematical_view(renderer):
     """
     Sets up the classic mathematical textbook view where:
@@ -55,3 +61,30 @@ def set_mathematical_view(renderer):
 
     # Reset the camera to fit all actors
     renderer.ResetCamera()
+
+
+def export_pdf(renderer, filename):
+    """
+    Exports the current view of the renderer to a PDF file.
+
+    Parameters:
+    -----------
+    renderer : vtkRenderer
+        The renderer whose view will be exported
+    filename : str
+        The name of the PDF file to save
+    """
+    # Create an instance of vtkGL2PSExporter
+    exporter = vtkGL2PSExporter()
+    
+    # Set the renderer
+    exporter.SetRenderWindow(renderer.GetRenderWindow())
+    
+    # Set the file format to PDF
+    exporter.SetFileFormatToPDF()
+    
+    # Set the output file name
+    exporter.SetFilePrefix(filename)
+    
+    # Write the file
+    exporter.Write()
