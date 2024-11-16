@@ -1,3 +1,22 @@
+from numpy import (
+    pi,
+    sin,
+    cos,
+    tan,
+    sqrt,
+    exp,
+    log,
+    sinh,
+    cosh,
+    tanh,
+    arcsin,
+    arccos,
+    arctan,
+    arcsinh,
+    arccosh,
+    arctanh,
+)
+
 def parse_function(text):
     try:
         func_code = f"""
