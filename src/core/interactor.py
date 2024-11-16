@@ -4,14 +4,19 @@ Custom interactor styles and related functionality.
 
 import vtk
 import sys
+import numpy as np
 from vtk import vtkGL2PSExporter
+from vtk import vtkOBJExporter
+from vtkmodules.util.numpy_support import numpy_to_vtk
+from vtkmodules.util.numpy_support import vtk_to_numpy
+import matplotlib.pyplot as plt
 
 
 # Define the custom interactor style
 class CustomInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
-    def __init__(self, renderer):
+    def __init__(self, widget):
         super().__init__()
-        self.renderer = renderer
+        self.widget = widget
         self.AddObserver(
             vtk.vtkCommand.LeftButtonPressEvent, self.left_button_press_event
         )
@@ -28,9 +33,11 @@ class CustomInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
             self.GetInteractor().TerminateApp()
             sys.exit(0)
         if key == "r":
-            set_mathematical_view(self.renderer)
+            set_mathematical_view(self.widget.renderer)
+        if key == "o":
+            export_to_obj(self.widget, "output")
         if key == "p":
-            export_pdf(self.renderer, "output")
+            export_to_png(self.widget, "output")
 
 
 def set_mathematical_view(renderer):
@@ -63,28 +70,41 @@ def set_mathematical_view(renderer):
     renderer.ResetCamera()
 
 
-def export_pdf(renderer, filename):
+def export_to_obj(widget, filename):
     """
-    Exports the current view of the renderer to a PDF file.
+    Exports the current view of the renderer to an OBJ file.
 
     Parameters:
     -----------
-    renderer : vtkRenderer
-        The renderer whose view will be exported
+    widget: QWidget
+        The widget containing the renderer
     filename : str
-        The name of the PDF file to save
+        The name of the OBJ file to save
     """
-    # Create an instance of vtkGL2PSExporter
-    exporter = vtkGL2PSExporter()
-    
-    # Set the renderer
-    exporter.SetRenderWindow(renderer.GetRenderWindow())
-    
-    # Set the file format to PDF
-    exporter.SetFileFormatToPDF()
-    
-    # Set the output file name
+    render_window = widget.interactor.GetRenderWindow()
+    exporter = vtkOBJExporter()
     exporter.SetFilePrefix(filename)
-    
-    # Write the file
+    exporter.SetInput(render_window)
     exporter.Write()
+
+
+def export_to_png(widget, filename):
+    """
+    Exports the current view of the renderer to a PNG file.
+
+    Parameters:
+    -----------
+    widget: QWidget
+        The widget containing the renderer
+    filename : str
+        The name of the PNG file to save
+    """
+    render_window = widget.interactor.GetRenderWindow()
+    window_to_image_filter = vtk.vtkWindowToImageFilter()
+    window_to_image_filter.SetInput(render_window)
+    window_to_image_filter.Update()
+
+    writer = vtk.vtkPNGWriter()
+    writer.SetFileName(filename + ".png")
+    writer.SetInputConnection(window_to_image_filter.GetOutputPort())
+    writer.Write()

@@ -5,5 +5,11 @@
 *.log
 Dockerfile
 
-# PDF
+# Images
 *.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.svg

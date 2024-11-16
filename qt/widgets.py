@@ -24,20 +24,20 @@ class VTKWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.vtk_widget = QVTKRenderWindowInteractor(self)
+        self.intereactor = QVTKRenderWindowInteractor(self)
         self.layout = QVBoxLayout()
-        self.layout.addWidget(self.vtk_widget)
+        self.layout.addWidget(self.intereactor)
         self.setLayout(self.layout)
 
         self.renderer = vtk.vtkRenderer()
-        self.vtk_widget.GetRenderWindow().AddRenderer(self.renderer)
-        self.interactor = self.vtk_widget.GetRenderWindow().GetInteractor()
+        self.intereactor.GetRenderWindow().AddRenderer(self.renderer)
+        self.interactor = self.intereactor.GetRenderWindow().GetInteractor()
 
-        style = CustomInteractorStyle(self.renderer)
+        style = CustomInteractorStyle(self)
         self.interactor.SetInteractorStyle(style)
 
     def get_render_window(self):
-        return self.vtk_widget.GetRenderWindow()
+        return self.intereactor.GetRenderWindow()
 
 
 class ControlWidget(QWidget):
