@@ -4,12 +4,7 @@ Custom interactor styles and related functionality.
 
 import vtk
 import sys
-import numpy as np
-from vtk import vtkGL2PSExporter
 from vtk import vtkOBJExporter
-from vtkmodules.util.numpy_support import numpy_to_vtk
-from vtkmodules.util.numpy_support import vtk_to_numpy
-import matplotlib.pyplot as plt
 
 
 # Define the custom interactor style
