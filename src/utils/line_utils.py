@@ -178,11 +178,16 @@ def create_contour_polydata(points, values, resolution):
 
 
 def create_func_traces_actor(
-    implicit_func, bounds, space=1, thickness=2, color=COLORS.GetColor3d('charcoal'), resolution=50
+    implicit_func,
+    bounds,
+    space=1,
+    thickness=2,
+    color=COLORS.GetColor3d("charcoal"),
+    resolution=50,
 ):
     """
     Creates an implicit function traces actor with proper transparency handling.
-    
+
     Parameters:
     -----------
     implicit_func : callable
@@ -199,13 +204,13 @@ def create_func_traces_actor(
         RGB values (0-1) for the traces
     resolution : int
         The resolution of the traces
-    
+
     Returns:
         vtkActor object
     """
     # Create append filter to combine all contours
     append_filter = vtk.vtkAppendPolyData()
-    
+
     # Create x-plane contours using vectorized operations
     x_values = np.arange(bounds[0], bounds[1] + space, space)
     for x in x_values:
@@ -213,7 +218,7 @@ def create_func_traces_actor(
         values = evaluate_function_on_points(points, implicit_func)
         contour_data = create_contour_polydata(points, values, resolution)
         append_filter.AddInputData(contour_data)
-    
+
     # Create y-plane contours using vectorized operations
     y_values = np.arange(bounds[2], bounds[3] + space, space)
     for y in y_values:
@@ -221,30 +226,30 @@ def create_func_traces_actor(
         values = evaluate_function_on_points(points, implicit_func)
         contour_data = create_contour_polydata(points, values, resolution)
         append_filter.AddInputData(contour_data)
-    
+
     append_filter.Update()
-    
+
     # Create optimized visualization pipeline
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInputConnection(append_filter.GetOutputPort())
     mapper.ScalarVisibilityOff()
-    
+
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
-    
+
     # Set up properties for transparency and appearance
     properties = actor.GetProperty()
     properties.SetColor(color)
     properties.SetLineWidth(thickness)
-    
+
     # Enable line transparency
     properties.SetRepresentationToWireframe()
     properties.LightingOff()  # Disable lighting effects on lines
     properties.SetAmbient(1.0)  # Full ambient lighting for consistent line appearance
     properties.SetDiffuse(0.0)  # No diffuse lighting
     properties.SetSpecular(0.0)  # No specular lighting
-    
+
     # Enable rendering lines as tubes for improved appearance
     properties.SetRenderLinesAsTubes(True)
-    
+
     return actor

@@ -2,7 +2,6 @@ import sympy as sp
 import numpy as np
 import vtk
 from src.core.constants import COLORS
-import math
 
 
 def create_func_surface_actor(
@@ -69,7 +68,7 @@ def create_func_surface_actor(
     contours.SetInputData(volume)
     contours.SetValue(0, iso_value)
     contours.Update()
-    
+
     contour_output = contours.GetOutput()
     if contour_output.GetNumberOfPoints() == 0:
         return vtk.vtkActor()

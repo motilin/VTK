@@ -1,4 +1,21 @@
-import math
+from numpy import (
+    pi,
+    sin,
+    cos,
+    tan,
+    sqrt,
+    exp,
+    log,
+    sinh,
+    cosh,
+    tanh,
+    arcsin,
+    arccos,
+    arctan,
+    arcsinh,
+    arccosh,
+    arctanh,
+)
 
 """
 Implicit functions are mathematical equations that define a surface in a 3D space.
@@ -7,6 +24,7 @@ where the function evaluates to zero. The implicit function can be defined by
 a lambda function that takes three arguments x, y, z and returns the value of the
 function at the given point.
 """
+
 
 def SURFACE(a, b, c):
     return lambda x, y, z: x**2 / a**2 - z / c
@@ -37,7 +55,7 @@ def HYPERBOLID_OF_TWO_SHEETS(a, b, c):
 
 
 def CUSTOM(a, b, c):
-    return lambda x, y, z: x**2 / a**2 + y**2 / b**2 - 1
+    return lambda x, y, z: cos(x) / a**2 + y**2 / b**2 - 1
 
 
 FUNCS = {
