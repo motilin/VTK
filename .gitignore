@@ -4,3 +4,6 @@
 # Docker
 *.log
 Dockerfile
+
+# PDF
+*.pdf
