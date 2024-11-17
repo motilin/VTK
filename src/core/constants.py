@@ -7,10 +7,13 @@ from vtkmodules.vtkCommonColor import vtkNamedColors
 # Window settings
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 1200
+
 AXES_LENGTH = 5
 X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX = -10, 10, -10, 10, -10, 10
 CONTROL_PANEL_WIDTH = 300
 CONTROL_PANEL_SPACING = 20
+SCALE_FACTOR = 100
+
 
 """
 Carefully curated color palette for mathematical surfaces.

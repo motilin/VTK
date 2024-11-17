@@ -17,7 +17,7 @@ import vtk
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from src.core.interactor import CustomInteractorStyle
 from qt.range_slider import RangeSlider, add_range_sliders
-from src.core.constants import CONTROL_PANEL_WIDTH, CONTROL_PANEL_SPACING
+from src.core.constants import CONTROL_PANEL_WIDTH, CONTROL_PANEL_SPACING, SCALE_FACTOR
 
 
 class VTKWidget(QWidget):
@@ -55,8 +55,6 @@ class ControlWidget(QWidget):
         label.setSizePolicy(
             QSizePolicy.Fixed, QSizePolicy.Fixed
         )  # Prevent label from expanding
-
-        SCALE_FACTOR = 100  # For 0.01 precision
 
         # Create and configure slider
         slider = QSlider(Qt.Horizontal, self)
@@ -117,6 +115,42 @@ class ControlWidget(QWidget):
             self.layout,
             update_callback,
         )
+
+    def add_range_text_boxes(self, text, bounds, update_callback):
+        label = QLabel(text, self)
+        label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        label.setAlignment(Qt.AlignLeft)
+        min_text_box = QLineEdit(self)
+        min_text_box.setAlignment(Qt.AlignRight)
+        min_text_box.setFixedWidth(70)  # width enough for "-0000.00"
+        min_text_box.setText(str(bounds[0]))
+        max_text_box = QLineEdit(self)
+        max_text_box.setAlignment(Qt.AlignRight)
+        max_text_box.setFixedWidth(70)  # width enough for "-0000.00"
+        max_text_box.setText(str(bounds[1]))
+
+        # Function to send new range to update_callback
+        def update_range():
+            try:
+                x_min = float(min_text_box.text())
+                x_max = float(max_text_box.text())
+                if x_min <= x_max:
+                    update_callback((x_min, x_max))
+            except ValueError:
+                pass
+
+        # Connect signals
+        min_text_box.returnPressed.connect(update_range)
+        max_text_box.returnPressed.connect(update_range)
+
+        # Create layout
+        range_layout = QHBoxLayout()
+        range_layout.setSpacing(10)
+        range_layout.addWidget(label, alignment=Qt.AlignLeft)
+        range_layout.addWidget(min_text_box)
+        range_layout.addWidget(max_text_box)
+        range_layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.addLayout(range_layout)
 
     def add_button(self, text, callback):
         button = QPushButton(text, self)

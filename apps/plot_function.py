@@ -70,10 +70,21 @@ class PlotFunc(QWidget):
         self.trace_spacing = 1
 
         # Populate the control widget
-        self.control_widget.add_range_sliders(
-            (self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max),
-            self.update_function,
-        )
+        self.control_widget.add_range_text_boxes("X range", (self.x_min, self.x_max), lambda val: (
+            setattr(self, "x_min", val[0]),
+            setattr(self, "x_max", val[1]),
+            self.update_function(),
+        ))
+        self.control_widget.add_range_text_boxes("Y range", (self.y_min, self.y_max), lambda val: (
+            setattr(self, "y_min", val[0]),
+            setattr(self, "y_max", val[1]),
+            self.update_function(),
+        ))
+        self.control_widget.add_range_text_boxes("Z range", (self.z_min, self.z_max), lambda val: (
+            setattr(self, "z_min", val[0]),
+            setattr(self, "z_max", val[1]),
+            self.update_function(),
+        ))
         self.control_widget.add_slider(
             (-3, 3),
             1,
@@ -174,9 +185,6 @@ class PlotFunc(QWidget):
         self.vtk_widget.interactor.Initialize()
 
     def update_function(self):
-        self.x_min, self.x_max = self.control_widget.x_slider.getRange()
-        self.y_min, self.y_max = self.control_widget.y_slider.getRange()
-        self.z_min, self.z_max = self.control_widget.z_slider.getRange()
         self.renderer.RemoveAllViewProps()
         self.renderer.AddActor(self.math_axes)
         
