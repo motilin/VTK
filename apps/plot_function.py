@@ -45,17 +45,17 @@ class PlotFunc(QWidget):
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
-        # Create an axes actor
-        self.math_axes = create_axes()
-        self.cube_axes = create_cube_axes_actor(
-            (X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX), self.renderer
-        )
-        self.cube_axes.SetVisibility(False)
-
         # Initialize bounds
         self.x_min, self.x_max = X_MIN, X_MAX
         self.y_min, self.y_max = Y_MIN, Y_MAX
         self.z_min, self.z_max = Z_MIN, Z_MAX
+        
+        # Create an axes actor
+        self.math_axes = create_axes()
+        self.cube_axes = create_cube_axes_actor(
+            (self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max), self.renderer
+        )
+        self.cube_axes.SetVisibility(False)
 
         # Initialize coefficients
         self.coeff_a = 1
@@ -179,6 +179,8 @@ class PlotFunc(QWidget):
         self.z_min, self.z_max = self.control_widget.z_slider.getRange()
         self.renderer.RemoveAllViewProps()
         self.renderer.AddActor(self.math_axes)
+        
+        self.cube_axes.SetBounds(self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max)
         self.renderer.AddActor(self.cube_axes)
 
         func = FUNCS[self.func_name]
