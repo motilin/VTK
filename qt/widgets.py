@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QShortcut,
 )
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtCore import Qt
 import vtk
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
@@ -58,27 +58,54 @@ class ControlWidget(QWidget):
 
         SCALE_FACTOR = 100  # For 0.01 precision
 
+        # Create and configure slider
         slider = QSlider(Qt.Horizontal, self)
         slider.setMinimum(int(bounds[0] * SCALE_FACTOR))
         slider.setMaximum(int(bounds[1] * SCALE_FACTOR))
         slider.setValue(int(value * SCALE_FACTOR))
-
-        def scaled_callback(value):
-            # Convert the integer value back to float with 0.01 precision
-            scaled_value = value / SCALE_FACTOR
-            update_callback(scaled_value)
-
-        slider.valueChanged.connect(scaled_callback)
         slider.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Fixed
         )  # Make slider expand horizontally
 
+        # Create and configure text box
+        text_box = QLineEdit(self)
+        text_box.setText(f"{value:.2f}")
+        text_box.setAlignment(Qt.AlignRight)
+        text_box.setFixedWidth(50)  # Width enough for "00.00"
+        text_box.setValidator(
+            QDoubleValidator(bounds[0], bounds[1], 2)
+        )  # Allow only valid numbers
+
+        # Function to update the text box when slider moves
+        def update_text_from_slider(value):
+            scaled_value = value / SCALE_FACTOR
+            text_box.setText(f"{scaled_value:.2f}")
+            update_callback(scaled_value)
+
+        # Function to update the slider when text changes
+        def update_slider_from_text():
+            try:
+                new_value = float(text_box.text())
+                if bounds[0] <= new_value <= bounds[1]:
+                    slider.setValue(int(new_value * SCALE_FACTOR))
+                    update_callback(new_value)
+            except ValueError:
+                # Restore previous valid value if input is invalid
+                scaled_value = slider.value() / SCALE_FACTOR
+                text_box.setText(f"{scaled_value:.2f}")
+
+        # Connect signals
+        slider.valueChanged.connect(update_text_from_slider)
+        text_box.returnPressed.connect(update_slider_from_text)
+
+        # Create layout
         slider_layout = QHBoxLayout()
-        slider_layout.setSpacing(5)  # Small spacing between label and slider
-        slider_layout.addWidget(label)  # Remove alignment to let it take minimum space
+        slider_layout.setSpacing(5)  # Small spacing between elements
+        slider_layout.addWidget(label)
         slider_layout.addWidget(
             slider, stretch=1
         )  # Add stretch factor to make slider expand
+        slider_layout.addWidget(text_box)
         slider_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins
 
         self.layout.addLayout(slider_layout)
