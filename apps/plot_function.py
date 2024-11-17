@@ -32,6 +32,7 @@ from src.utils.line_utils import create_axes, create_func_traces_actor
 from qt.widgets import VTKWidget, ControlWidget
 from src.math.implicit_functions import FUNCS
 from src.math.func_utils import parse_function
+from src.utils.cube_axes import create_cube_axes_actor
 
 
 class PlotFunc(QWidget):
@@ -46,6 +47,10 @@ class PlotFunc(QWidget):
 
         # Create an axes actor
         self.math_axes = create_axes()
+        self.cube_axes = create_cube_axes_actor(
+            (X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX), self.renderer
+        )
+        self.cube_axes.SetVisibility(False)
 
         # Initialize bounds
         self.x_min, self.x_max = X_MIN, X_MAX
@@ -141,6 +146,14 @@ class PlotFunc(QWidget):
                 self.vtk_widget.get_render_window().Render(),
             ),
         )
+        self.control_widget.add_checkbox(
+            "Cube Axes",
+            False,
+            lambda state: (
+                self.cube_axes.SetVisibility(state),
+                self.vtk_widget.get_render_window().Render(),
+            ),
+        )
         # parse the custom function string as a python code and set it to self.custom_func
         self.control_widget.add_textbox(
             "Custom Function:",
@@ -166,6 +179,7 @@ class PlotFunc(QWidget):
         self.z_min, self.z_max = self.control_widget.z_slider.getRange()
         self.renderer.RemoveAllViewProps()
         self.renderer.AddActor(self.math_axes)
+        self.renderer.AddActor(self.cube_axes)
 
         func = FUNCS[self.func_name]
         if self.func_name == "Custom" and self.custom_func:
