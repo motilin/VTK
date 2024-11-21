@@ -15,7 +15,7 @@ class CustomInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
         self.AddObserver(
             vtk.vtkCommand.LeftButtonPressEvent, self.left_button_press_event
         )
-        self.AddObserver(vtk.vtkCommand.KeyPressEvent, self.on_key_press_event)
+        # self.AddObserver(vtk.vtkCommand.KeyPressEvent, self.on_key_press_event)
 
     def left_button_press_event(self, obj, event):
         self.OnLeftButtonDown()

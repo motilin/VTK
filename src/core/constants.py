@@ -28,6 +28,7 @@ dark_blue = map(lambda x: x / 255.0, [26, 51, 102, 255])
 blue = map(lambda x: x / 255.0, [0, 0, 255, 255])
 red = map(lambda x: x / 255.0, [255, 0, 0, 255])
 charcoal = map(lambda x: x / 255.0, [44, 54, 64, 255])
+black = map(lambda x: x / 255.0, [0, 0, 0, 255])
 
 # Deep blues and teals
 deep_azure = map(lambda x: x / 255.0, [0, 127, 255, 255])  # Rich blue
@@ -75,3 +76,8 @@ COLORS.SetColor("bronze", *bronze)
 COLORS.SetColor("dark_blue", *dark_blue)
 COLORS.SetColor("blue", *blue)
 COLORS.SetColor("red", *red)
+
+DEFAULT_COLOR_START = COLORS.GetColor3d("emerald")
+DEFAULT_COLOR_END = COLORS.GetColor3d("coral")
+DEFAULT_LINE_COLOR = COLORS.GetColor3d("charcoal")
+DEFAULT_BACKGROUND_COLOR = COLORS.GetColor3d("dark_blue")

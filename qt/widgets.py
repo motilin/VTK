@@ -9,15 +9,17 @@ from PyQt5.QtWidgets import (
     QSlider,
     QCheckBox,
     QLineEdit,
-    QShortcut,
+    QTextEdit,
+    QColorDialog,
 )
-from PyQt5.QtGui import QDoubleValidator
+from PyQt5.QtGui import QDoubleValidator, QFontMetrics, QColor
 from PyQt5.QtCore import Qt
 import vtk
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from src.core.interactor import CustomInteractorStyle
 from qt.range_slider import RangeSlider, add_range_sliders
-from src.core.constants import CONTROL_PANEL_WIDTH, CONTROL_PANEL_SPACING, SCALE_FACTOR
+from src.core.constants import CONTROL_PANEL_WIDTH, CONTROL_PANEL_SPACING, SCALE_FACTOR, COLORS
+from qt.color_picker import ColorPicker
 
 
 class VTKWidget(QWidget):
@@ -28,6 +30,7 @@ class VTKWidget(QWidget):
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.intereactor)
         self.setLayout(self.layout)
+        self.input_box = None
 
         self.renderer = vtk.vtkRenderer()
         self.intereactor.GetRenderWindow().AddRenderer(self.renderer)
@@ -49,6 +52,12 @@ class ControlWidget(QWidget):
         self.setLayout(self.layout)
         self.setFixedWidth(CONTROL_PANEL_WIDTH)
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+
+    def add_label(self, text):
+        label = QLabel(text, self)
+        label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.layout.addWidget(label)
+        return label
 
     def add_slider(self, bounds, value, text, update_callback):
         label = QLabel(text, self)
@@ -107,6 +116,8 @@ class ControlWidget(QWidget):
         slider_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins
 
         self.layout.addLayout(slider_layout)
+        
+        return slider
 
     def add_range_sliders(self, bounds, update_callback):
         add_range_sliders(
@@ -115,7 +126,7 @@ class ControlWidget(QWidget):
             self.layout,
             update_callback,
         )
-
+        
     def add_range_text_boxes(self, text, bounds, update_callback):
         label = QLabel(text, self)
         label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -151,6 +162,8 @@ class ControlWidget(QWidget):
         range_layout.addWidget(max_text_box)
         range_layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addLayout(range_layout)
+        
+        return min_text_box, max_text_box
 
     def add_button(self, text, callback):
         button = QPushButton(text, self)
@@ -158,16 +171,33 @@ class ControlWidget(QWidget):
         button_layout = QHBoxLayout()
         button_layout.addWidget(button, alignment=Qt.AlignTop)
         self.layout.addLayout(button_layout)
+        
+        return button
 
     def add_dropdown(self, text, options, callback):
         label = QLabel(text, self)
         dropdown = QComboBox(self)
         dropdown.addItems(options)
         dropdown.currentIndexChanged.connect(callback)
+
+        # Ensure dropdown stretches
+        dropdown.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
         dropdown_layout = QHBoxLayout()
         dropdown_layout.addWidget(label, alignment=Qt.AlignLeft)
-        dropdown_layout.addWidget(dropdown, alignment=Qt.AlignLeft)
+        dropdown_layout.addWidget(dropdown, stretch=1)
+
+        # Set the layout stretch factor for proper resizing
+        dropdown_layout.setStretch(0, 0)  # Label doesn't stretch
+        dropdown_layout.setStretch(1, 1)  # Dropdown stretches
+
         self.layout.addLayout(dropdown_layout)
+        
+        return dropdown
+
+    def update_dropdown(self, dropdown, options):
+        dropdown.clear()
+        dropdown.addItems(options)
 
     def add_checkbox(self, text, value, callback):
         checkbox = QCheckBox(text, self)
@@ -176,14 +206,25 @@ class ControlWidget(QWidget):
         checkbox_layout = QHBoxLayout()
         checkbox_layout.addWidget(checkbox, alignment=Qt.AlignTop)
         self.layout.addLayout(checkbox_layout)
+        
+        return checkbox
 
     def add_textbox(self, text, callback):
         label = QLabel(text, self)
         button = QPushButton("Draw", self)
-        textbox = QLineEdit(self)
+        textbox = QTextEdit(self)
         textbox.setFixedWidth(CONTROL_PANEL_WIDTH - 20)
-        textbox.setFixedHeight(2 * 20)
-        button.clicked.connect(lambda: callback(textbox.text()))
+        font_metrics = QFontMetrics(textbox.font())
+        line_height = font_metrics.lineSpacing()
+        textbox.setFixedHeight(line_height * 2)
+
+        def adjust_textbox_height():
+            text = textbox.toPlainText()
+            lines = text.count("\n") + 2
+            textbox.setFixedHeight(line_height * max(lines, 2))
+
+        textbox.textChanged.connect(adjust_textbox_height)
+        button.clicked.connect(lambda: callback(textbox.toPlainText()))
 
         # Use an event filter to handle Ctrl+Enter
         textbox.installEventFilter(self)
@@ -193,10 +234,14 @@ class ControlWidget(QWidget):
         self.active_textbox = textbox
 
         textbox_layout = QVBoxLayout()
-        textbox_layout.addWidget(label)
-        textbox_layout.addWidget(textbox)
-        textbox_layout.addWidget(button)
+        textbox_layout.addWidget(label, alignment=Qt.AlignTop)
+        textbox_layout.addWidget(textbox, alignment=Qt.AlignTop)
+        textbox_layout.addWidget(button, alignment=Qt.AlignTop)
         self.layout.addLayout(textbox_layout)
+       
+        self.input_box = textbox 
+        return textbox
+
 
     def eventFilter(self, obj, event):
         if obj == self.active_textbox and event.type() == event.KeyPress:
@@ -204,4 +249,28 @@ class ControlWidget(QWidget):
                 if event.modifiers() & Qt.ControlModifier:  # Check for Ctrl modifier
                     self.active_button.click()
                     return True  # Consume the event
+            if event.key() == Qt.Key_Escape:
+                self.active_textbox.clearFocus()
+                return True
         return super().eventFilter(obj, event)
+
+    def remove_layout_by_label(self, label_text):
+        for i in reversed(range(self.layout.count())):
+            item = self.layout.itemAt(i)
+            if isinstance(item, QHBoxLayout):
+                for j in range(item.count()):
+                    widget = item.itemAt(j).widget()
+                    if isinstance(widget, QLabel) and widget.text() == label_text:
+                        # Remove all widgets in the QHBoxLayout
+                        while item.count():
+                            widget_to_remove = item.takeAt(0).widget()
+                            if widget_to_remove:
+                                widget_to_remove.deleteLater()
+                        # Remove the QHBoxLayout itself
+                        self.layout.removeItem(item)
+                        break
+                    
+    def add_color_picker(self, text, color, callback, dual=False):
+        color_picker = ColorPicker(self, text, color, callback, dual)
+        self.layout.addLayout(color_picker.layout)
+        return color_picker 

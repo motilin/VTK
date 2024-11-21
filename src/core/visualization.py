@@ -3,7 +3,7 @@
 Core visualization functionality.
 """
 import vtk
-from .constants import COLORS
+from .constants import COLORS, DEFAULT_BACKGROUND_COLOR
 from src.core.interactor import CustomInteractorStyle
 
 
@@ -24,5 +24,5 @@ def setup_renderer():
 
 def configure_window(renWin, ren, width, height):
     """Configure the render window."""
-    ren.SetBackground(COLORS.GetColor3d("dark_blue"))
+    ren.SetBackground(DEFAULT_BACKGROUND_COLOR)
     renWin.SetSize(width, height)
