@@ -25,6 +25,7 @@ from src.core.constants import (
     DEFAULT_COLOR_START,
     DEFAULT_COLOR_END,
     DEFAULT_LINE_COLOR,
+    DEFAULT_SLIDER_BOUNDS,
     SCALE_FACTOR,
 )
 from src.utils.surface_utils import (
@@ -112,13 +113,14 @@ class PlotFunc(QWidget):
             "Z range", (self.global_z_min, self.global_z_max), update_z_range
         )
 
-        def update_trace_spacing(val):
+        def update_trace_spacing(val, bounds):
             if self.active_func:
                 self.active_func.trace_spacing = val
+                self.active_func.trace_spacing_bounds = bounds
                 self.active_func.update_render(self)
 
         trace_spacing_slider = self.control_widget.add_slider(
-            (0.1, 3), 1, "Trace Spacing", update_trace_spacing
+            DEFAULT_SLIDER_BOUNDS, 1, "Trace Spacing", update_trace_spacing
         )
 
         def update_color_start(color):
@@ -188,8 +190,9 @@ class PlotFunc(QWidget):
                 y_max.setText(str(self.active_func.y_max))
                 z_min.setText(str(self.active_func.z_min))
                 z_max.setText(str(self.active_func.z_max))
-                trace_spacing_slider.setValue(
-                    int(self.active_func.trace_spacing) * SCALE_FACTOR
+                trace_spacing_slider.set_value(
+                    self.active_func.trace_spacing,
+                    self.active_func.trace_spacing_bounds,
                 )
                 surface_colors.set_colors(
                     (self.active_func.color_start, self.active_func.color_end),
@@ -201,28 +204,34 @@ class PlotFunc(QWidget):
         func_dropdown = self.control_widget.add_dropdown(
             "Active function", self.func_names, update_active_func
         )
+       
+        def update_slider(coeff):
+            return lambda val, bounds: (
+                self.coeffs.update({coeff: val}),
+                self.update_functions(coeff),
+            )
 
         def update_coeff_sliders(self):
             new_coeff_dict = dict()
+            missing_sliders = set()
             for func in self.functions:
                 for coeff in func.coeffs:
                     if coeff in self.coeffs:
                         new_coeff_dict[coeff] = self.coeffs[coeff]
-                    elif coeff not in new_coeff_dict:
+                    else:
                         new_coeff_dict[coeff] = 1
-                        self.control_widget.add_slider(
-                            (0.1, 3),
-                            1,
-                            coeff.name,
-                            lambda val, coeff=coeff: (
-                                self.coeffs.update({coeff: val}),
-                                self.update_functions(coeff),
-                            ),
-                        )
+                        missing_sliders.add(coeff)
             for coeff in self.coeffs:
                 if coeff not in new_coeff_dict:
-                    self.control_widget.remove_layout_by_label(coeff.name)
+                    self.control_widget.remove_slider_by_label(coeff.name)
             self.coeffs = new_coeff_dict
+            for coeff in list(missing_sliders):
+                self.control_widget.add_slider(
+                    DEFAULT_SLIDER_BOUNDS,
+                    1,
+                    coeff.name,
+                    update_slider(coeff),
+                )
 
         def handle_function_input(text):
             self.func_names = []
@@ -340,7 +349,7 @@ class PlotFunc(QWidget):
             self.global_z_max,
         )
         self.renderer.AddActor(self.cube_axes)
-        
+
         for func in self.functions:
             func.update_render(self)
 

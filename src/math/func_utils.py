@@ -28,6 +28,7 @@ from src.core.constants import (
     DEFAULT_COLOR_START,
     DEFAULT_COLOR_END,
     DEFAULT_LINE_COLOR,
+    DEFAULT_SLIDER_BOUNDS
 )
 from src.utils.surface_utils import (
     create_func_surface_actor,
@@ -52,6 +53,7 @@ class Func:
         self.y_min, self.y_max = Y_MIN, Y_MAX
         self.z_min, self.z_max = Z_MIN, Z_MAX
         self.trace_spacing = 1
+        self.trace_spacing_bounds = DEFAULT_SLIDER_BOUNDS
         self.thickness = 2
         self.dashed = False
         self.color_start = DEFAULT_COLOR_START
