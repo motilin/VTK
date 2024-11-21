@@ -26,13 +26,8 @@ from src.core.constants import (
     DEFAULT_COLOR_END,
     DEFAULT_LINE_COLOR,
     DEFAULT_SLIDER_BOUNDS,
-    SCALE_FACTOR,
 )
-from src.utils.surface_utils import (
-    create_func_surface_actor,
-    set_z_gradient_coloring,
-)
-from src.utils.line_utils import create_axes, create_func_traces_actor
+from src.utils.line_utils import create_axes
 from qt.widgets import VTKWidget, ControlWidget
 from src.math.implicit_functions import FUNCS
 from src.math.func_utils import Func
@@ -78,8 +73,6 @@ class PlotFunc(QWidget):
 
         # Initialize function name and visibitliy
         self.custom_func = None
-        self.show_traces = True
-        self.show_surface = False
         self.trace_spacing = 1
 
         # Populate the control widget
@@ -113,16 +106,6 @@ class PlotFunc(QWidget):
             "Z range", (self.global_z_min, self.global_z_max), update_z_range
         )
 
-        def update_trace_spacing(val, bounds):
-            if self.active_func:
-                self.active_func.trace_spacing = val
-                self.active_func.trace_spacing_bounds = bounds
-                self.active_func.update_render(self)
-
-        trace_spacing_slider = self.control_widget.add_slider(
-            DEFAULT_SLIDER_BOUNDS, 1, "Trace Spacing", update_trace_spacing
-        )
-
         def update_color_start(color):
             if self.active_func:
                 self.active_func.color_start = color
@@ -151,6 +134,52 @@ class PlotFunc(QWidget):
             update_line_color,
         )
 
+        def update_trace_spacing(val, bounds):
+            if self.active_func:
+                self.active_func.trace_spacing = val
+                self.active_func.trace_spacing_bounds = bounds
+                self.active_func.update_render(self)
+
+        trace_spacing_slider = self.control_widget.add_slider(
+            DEFAULT_SLIDER_BOUNDS, 1, "Trace Spacing", update_trace_spacing
+        )
+
+        def update_line_thickness(val, bounds):
+            if self.active_func:
+                self.active_func.thickness = val
+                self.active_func.update_render(self)
+
+        line_thickness = self.control_widget.add_slider(
+            (0.1, 10),
+            2,
+            "Line Thickness",
+            update_line_thickness,
+        )
+
+        def update_opacity(val, bounds):
+            if self.active_func:
+                self.active_func.opacity = val
+                self.active_func.update_render(self)
+
+        opacity = self.control_widget.add_slider(
+            (0, 1),
+            1,
+            "Opacity",
+            update_opacity,
+        )
+
+        def update_dash_spacing(val, bounds):
+            if self.active_func:
+                self.active_func.dash_spacing = val
+                self.active_func.update_render(self)
+
+        dash_spacing = self.control_widget.add_slider(
+            (0, 10),
+            0,
+            "Dash Spacing",
+            update_dash_spacing,
+        )
+
         def set_show_surface(state):
             if self.active_func:
                 self.active_func.show_surface = state
@@ -166,19 +195,19 @@ class PlotFunc(QWidget):
             set_show_surface,
         )
 
-        def set_show_traces(state):
+        def set_show_lines(state):
             if self.active_func:
-                self.active_func.show_traces = state
-                if self.active_func.traces_actor:
-                    self.active_func.traces_actor.SetVisibility(state)
+                self.active_func.show_lines = state
+                if self.active_func.lines_actor:
+                    self.active_func.lines_actor.SetVisibility(state)
                 else:
                     self.active_func.update_render(self)
                 self.vtk_widget.get_render_window().Render()
 
-        show_traces_checkbox = self.control_widget.add_checkbox(
-            "Traces",
+        show_lines_checkbox = self.control_widget.add_checkbox(
+            "Lines",
             True,
-            set_show_traces,
+            set_show_lines,
         )
 
         def update_active_func(idx):
@@ -198,13 +227,16 @@ class PlotFunc(QWidget):
                     (self.active_func.color_start, self.active_func.color_end),
                 )
                 line_color.set_colors(self.active_func.line_color)
+                line_thickness.set_value(self.active_func.thickness, (0.1, 10))
+                opacity.set_value(self.active_func.opacity, (0, 1))
+                dash_spacing.set_value(self.active_func.dash_spacing, (0, 10))
                 show_surface_checkbox.setChecked(self.active_func.show_surface)
-                show_traces_checkbox.setChecked(self.active_func.show_traces)
+                show_lines_checkbox.setChecked(self.active_func.show_lines)
 
         func_dropdown = self.control_widget.add_dropdown(
             "Active function", self.func_names, update_active_func
         )
-       
+
         def update_slider(coeff):
             return lambda val, bounds: (
                 self.coeffs.update({coeff: val}),
@@ -253,8 +285,8 @@ class PlotFunc(QWidget):
                 if func not in new_functions:
                     if func.surface_actor:
                         self.renderer.RemoveActor(func.surface_actor)
-                    if func.traces_actor:
-                        self.renderer.RemoveActor(func.traces_actor)
+                    if func.lines_actor:
+                        self.renderer.RemoveActor(func.lines_actor)
             self.vtk_widget.get_render_window().Render()
 
             # Update the functions list and coefficient sliders

@@ -253,3 +253,120 @@ def create_func_traces_actor(
     properties.SetRenderLinesAsTubes(True)
 
     return actor
+
+
+
+def create_parametric_curve_actor(
+    parametric_func,  # NumPy function (u,v) -> (x,y,z)
+    u_range=(0, 1),  # U parameter range
+    v_range=(0, 1),  # V parameter range
+    color=COLORS.GetColor3d("charcoal"),  # Actor color
+    thickness=1.0,  # Tube thickness
+    opacity=1.0,  # Actor opacity
+    dash_spacing=0.0,  # Dash spacing (0 = solid line)
+):
+    tube_radius = thickness / 40
+    # Dynamic resolution calculation
+    u_span = abs(u_range[1] - u_range[0])
+    v_span = abs(v_range[1] - v_range[0])
+    base_resolution = int(max(50, min(300, (u_span + v_span) * 200)))
+    resolution = int(base_resolution * max(1, 0.1 / tube_radius))
+    resolution = max(50, min(resolution, 500))
+
+    # Generate points
+    u_min, u_max = u_range
+    v_min, v_max = v_range
+    u_values = np.linspace(u_min, u_max, resolution)
+    v_values = np.linspace(v_min, v_max, resolution)
+
+    # Create points and cells for the complete curve
+    points = vtk.vtkPoints()
+    lines = vtk.vtkCellArray()
+
+    if dash_spacing > 0:
+        # Invert dash spacing logic: larger value = larger gaps
+        base_dash_points = int(max(3, resolution / 20))  # minimum dash size
+        space_points = int(
+            base_dash_points * dash_spacing
+        )  # space grows with dash_spacing
+        dash_points = base_dash_points  # keep dash size constant
+
+        # Create dashed line segments
+        current_point = 0
+        while current_point < resolution:
+            # Add a dash segment
+            if current_point + dash_points <= resolution:
+                line = vtk.vtkPolyLine()
+                line.GetPointIds().SetNumberOfIds(dash_points)
+
+                for i in range(dash_points):
+                    idx = current_point + i
+                    x, y, z = parametric_func(u_values[idx], v_values[idx])
+                    point_id = points.InsertNextPoint(x, y, z)
+                    line.GetPointIds().SetId(i, point_id)
+
+                lines.InsertNextCell(line)
+                current_point += dash_points + space_points
+            else:
+                break
+    else:
+        # Create continuous line
+        line = vtk.vtkPolyLine()
+        line.GetPointIds().SetNumberOfIds(resolution)
+
+        for i in range(resolution):
+            x, y, z = parametric_func(u_values[i], v_values[i])
+            point_id = points.InsertNextPoint(x, y, z)
+            line.GetPointIds().SetId(i, point_id)
+
+        lines.InsertNextCell(line)
+
+    # Create polydata
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetLines(lines)
+
+    # Create tube filter
+    tube_filter = vtk.vtkTubeFilter()
+    tube_filter.SetInputData(polydata)
+    tube_filter.SetRadius(tube_radius)
+    tube_filter.SetNumberOfSides(24)
+    tube_filter.SetVaryRadiusToVaryRadiusOff()
+    tube_filter.CappingOn()
+
+    # Create mapper
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(tube_filter.GetOutputPort())
+
+    # Create actor
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    # Configure better transparency
+    property = actor.GetProperty()
+    property.SetColor(color)
+    property.SetOpacity(opacity)
+
+    # Enhanced opacity handling
+    if opacity < 1.0:
+        property.SetAmbient(0.1)
+        property.SetDiffuse(0.6)
+        property.SetSpecular(0.3)
+        property.SetSpecularPower(100)
+        actor.ForceTranslucentOn()
+        actor.GetProperty().BackfaceCullingOff()
+
+        # Try to enable alpha blending
+        property.SetRepresentationToSurface()
+        mapper.SetScalarVisibility(False)
+
+        # Additional transparency settings
+        property.SetInterpolationToPhong()
+        actor.Modified()
+    else:
+        property.SetAmbient(0.3)
+        property.SetDiffuse(0.7)
+        property.SetSpecular(0.2)
+        property.SetSpecularPower(20)
+
+    return actor

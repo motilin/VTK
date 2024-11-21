@@ -65,7 +65,7 @@ class ColorPicker:
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.label, alignment=Qt.AlignLeft)
         for picker in self.pickers:
-            self.layout.addWidget(picker, alignment=Qt.AlignLeft)
+            self.layout.addWidget(picker, alignment=Qt.AlignRight)
     
     def set_colors(self, colors):
         """Set the color(s) for the picker(s)."""
