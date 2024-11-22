@@ -46,17 +46,24 @@ class PlotFunc(QWidget):
         self.layout.addWidget(self.control_widget)
         self.layout.addWidget(self.vtk_widget, stretch=1)
 
+        # Set up depth peeling (for transparency)
+        self.renderer.SetUseDepthPeeling(1)
+        self.renderer.SetOcclusionRatio(0.1)
+        self.renderer.SetMaximumNumberOfPeels(4)
+        self.vtk_widget.get_render_window().SetMultiSamples(0)
+        self.vtk_widget.get_render_window().SetAlphaBitPlanes(1)
+
         self.functions = []
         self.func_names = []
         self.coeffs = dict()
         self.active_func = None
 
-        # Initialize bounds
+        # Initialize global bounds
         self.global_x_min, self.global_x_max = X_MIN, X_MAX
         self.global_y_min, self.global_y_max = Y_MIN, Y_MAX
         self.global_z_min, self.global_z_max = Z_MIN, Z_MAX
 
-        # Create an axes actor
+        # Create axes actor
         self.math_axes = create_axes()
         self.cube_axes = create_cube_axes_actor(
             (
@@ -70,10 +77,6 @@ class PlotFunc(QWidget):
             self.renderer,
         )
         self.cube_axes.SetVisibility(False)
-
-        # Initialize function name and visibitliy
-        self.custom_func = None
-        self.trace_spacing = 1
 
         # Populate the control widget
         def update_x_range(val):
@@ -105,6 +108,19 @@ class PlotFunc(QWidget):
         z_min, z_max = self.control_widget.add_range_text_boxes(
             "Z range", (self.global_z_min, self.global_z_max), update_z_range
         )
+        
+        # def update_t_range(values, bounds):
+        #     if self.active_func:
+        #         print(values)
+        #         print(bounds)
+
+        # t_range_slider = self.control_widget.add_slider(
+        #     DEFAULT_SLIDER_BOUNDS,
+        #     (0, 1),
+        #     "T Range",
+        #     update_t_range,
+        #     dual=True,
+        # )                
 
         def update_color_start(color):
             if self.active_func:
@@ -147,10 +163,11 @@ class PlotFunc(QWidget):
         def update_line_thickness(val, bounds):
             if self.active_func:
                 self.active_func.thickness = val
+                self.active_func.thickness_bounds = bounds
                 self.active_func.update_render(self)
 
         line_thickness = self.control_widget.add_slider(
-            (0.1, 10),
+            DEFAULT_SLIDER_BOUNDS,
             2,
             "Line Thickness",
             update_line_thickness,
@@ -171,10 +188,11 @@ class PlotFunc(QWidget):
         def update_dash_spacing(val, bounds):
             if self.active_func:
                 self.active_func.dash_spacing = val
+                self.active_func.dash_spacing_bounds = bounds
                 self.active_func.update_render(self)
 
         dash_spacing = self.control_widget.add_slider(
-            (0, 10),
+            DEFAULT_SLIDER_BOUNDS,
             0,
             "Dash Spacing",
             update_dash_spacing,
@@ -183,10 +201,10 @@ class PlotFunc(QWidget):
         def set_show_surface(state):
             if self.active_func:
                 self.active_func.show_surface = state
+                if not self.active_func.surface_actor:
+                    self.active_func.update_render(self)
                 if self.active_func.surface_actor:
                     self.active_func.surface_actor.SetVisibility(state)
-                else:
-                    self.active_func.update_render(self)
                 self.vtk_widget.get_render_window().Render()
 
         show_surface_checkbox = self.control_widget.add_checkbox(
@@ -198,10 +216,10 @@ class PlotFunc(QWidget):
         def set_show_lines(state):
             if self.active_func:
                 self.active_func.show_lines = state
+                if not self.active_func.lines_actor:
+                    self.active_func.update_render(self)
                 if self.active_func.lines_actor:
                     self.active_func.lines_actor.SetVisibility(state)
-                else:
-                    self.active_func.update_render(self)
                 self.vtk_widget.get_render_window().Render()
 
         show_lines_checkbox = self.control_widget.add_checkbox(
@@ -274,7 +292,7 @@ class PlotFunc(QWidget):
             for func_text in text.split("\n"):
                 func = Func(func_text.strip())
                 if func.legal and func not in new_functions:
-                    self.func_names.append(func.latex)
+                    self.func_names.append(func.str)
                     if func in self.functions:
                         new_functions.append(self.functions[self.functions.index(func)])
                     else:

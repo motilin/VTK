@@ -183,6 +183,7 @@ def create_func_traces_actor(
     space=1,
     thickness=2,
     color=COLORS.GetColor3d("charcoal"),
+    opacity=1.0,
     resolution=50,
 ):
     """
@@ -248,6 +249,7 @@ def create_func_traces_actor(
     properties.SetAmbient(1.0)  # Full ambient lighting for consistent line appearance
     properties.SetDiffuse(0.0)  # No diffuse lighting
     properties.SetSpecular(0.0)  # No specular lighting
+    properties.SetOpacity(opacity)
 
     # Enable rendering lines as tubes for improved appearance
     properties.SetRenderLinesAsTubes(True)
@@ -255,11 +257,9 @@ def create_func_traces_actor(
     return actor
 
 
-
 def create_parametric_curve_actor(
-    parametric_func,  # NumPy function (u,v) -> (x,y,z)
-    u_range=(0, 1),  # U parameter range
-    v_range=(0, 1),  # V parameter range
+    parametric_func,  # NumPy function (t) -> (x,y,z)
+    t_range=(0, 1),  # t range
     color=COLORS.GetColor3d("charcoal"),  # Actor color
     thickness=1.0,  # Tube thickness
     opacity=1.0,  # Actor opacity
@@ -267,17 +267,14 @@ def create_parametric_curve_actor(
 ):
     tube_radius = thickness / 40
     # Dynamic resolution calculation
-    u_span = abs(u_range[1] - u_range[0])
-    v_span = abs(v_range[1] - v_range[0])
-    base_resolution = int(max(50, min(300, (u_span + v_span) * 200)))
+    t_span = abs(t_range[1] - t_range[0])
+    base_resolution = int(max(50, min(100, t_span * 200)))
     resolution = int(base_resolution * max(1, 0.1 / tube_radius))
     resolution = max(50, min(resolution, 500))
 
     # Generate points
-    u_min, u_max = u_range
-    v_min, v_max = v_range
-    u_values = np.linspace(u_min, u_max, resolution)
-    v_values = np.linspace(v_min, v_max, resolution)
+    t_min, t_max = t_range
+    t_values = np.linspace(t_min, t_max, resolution)
 
     # Create points and cells for the complete curve
     points = vtk.vtkPoints()
@@ -298,13 +295,11 @@ def create_parametric_curve_actor(
             if current_point + dash_points <= resolution:
                 line = vtk.vtkPolyLine()
                 line.GetPointIds().SetNumberOfIds(dash_points)
-
                 for i in range(dash_points):
                     idx = current_point + i
-                    x, y, z = parametric_func(u_values[idx], v_values[idx])
+                    x, y, z = parametric_func(t_values[idx])
                     point_id = points.InsertNextPoint(x, y, z)
                     line.GetPointIds().SetId(i, point_id)
-
                 lines.InsertNextCell(line)
                 current_point += dash_points + space_points
             else:
@@ -313,12 +308,10 @@ def create_parametric_curve_actor(
         # Create continuous line
         line = vtk.vtkPolyLine()
         line.GetPointIds().SetNumberOfIds(resolution)
-
         for i in range(resolution):
-            x, y, z = parametric_func(u_values[i], v_values[i])
+            x, y, z = parametric_func(t_values[i])
             point_id = points.InsertNextPoint(x, y, z)
             line.GetPointIds().SetId(i, point_id)
-
         lines.InsertNextCell(line)
 
     # Create polydata
@@ -342,7 +335,7 @@ def create_parametric_curve_actor(
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
 
-    # Configure better transparency
+    # Configure properties
     property = actor.GetProperty()
     property.SetColor(color)
     property.SetOpacity(opacity)
@@ -353,15 +346,21 @@ def create_parametric_curve_actor(
         property.SetDiffuse(0.6)
         property.SetSpecular(0.3)
         property.SetSpecularPower(100)
+        property.SetOpacity(opacity)
+
+        # Force translucent rendering
         actor.ForceTranslucentOn()
         actor.GetProperty().BackfaceCullingOff()
 
-        # Try to enable alpha blending
+        # Set surface representation
         property.SetRepresentationToSurface()
+
+        # Disable scalar visibility
         mapper.SetScalarVisibility(False)
 
-        # Additional transparency settings
+        # Set Phong interpolation
         property.SetInterpolationToPhong()
+
         actor.Modified()
     else:
         property.SetAmbient(0.3)
@@ -369,4 +368,36 @@ def create_parametric_curve_actor(
         property.SetSpecular(0.2)
         property.SetSpecularPower(20)
 
+    return actor
+
+
+def create_point_actor(
+    coordinates,  # Point coordinates (x, y, z)
+    color=COLORS.GetColor3d("charcoal"),  # Actor color
+    thickness=1.0,  # Sphere thickness
+    opacity=1.0,  # Actor opacity
+):
+    radius = thickness / 20
+
+    # Create sphere source
+    sphere = vtk.vtkSphereSource()
+    sphere.SetCenter(coordinates)
+    sphere.SetRadius(radius)
+    sphere.SetPhiResolution(24)
+    sphere.SetThetaResolution(24)
+   
+    # Create mapper
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(sphere.GetOutputPort()) 
+    
+    # Create an actor for the sphere
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().SetColor(color)
+    actor.GetProperty().SetOpacity(opacity)
+    actor.GetProperty().SetAmbient(0.3)
+    actor.GetProperty().SetDiffuse(0.7)
+    actor.GetProperty().SetSpecular(0.2)
+    actor.GetProperty().SetSpecularPower(20)
+    
     return actor

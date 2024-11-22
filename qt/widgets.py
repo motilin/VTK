@@ -66,7 +66,7 @@ class ControlWidget(QWidget):
         return label
 
     # Make use of the SliderMinMax class
-    def add_slider(self, bounds, value, text, update_callback):
+    def add_slider(self, bounds, value, text, update_callback, dual=False):
         slider = Slider(self, bounds, value, text, update_callback)
         self.layout.addWidget(slider)
         return slider
@@ -77,7 +77,7 @@ class ControlWidget(QWidget):
             widget = item.widget()
             if isinstance(widget, Slider):
                 if widget.label.text() == label_text:
-                    item.deleteLater()
+                    widget.deleteLater()
 
     def add_range_sliders(self, bounds, update_callback):
         add_range_sliders(

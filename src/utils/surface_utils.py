@@ -97,7 +97,7 @@ def create_func_surface_actor(
     return actor
 
 
-def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1)):
+def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1), opacity=1.0):
     """
     Adds a gradient coloring to a VTK actor based on z-coordinate values.
 
@@ -109,6 +109,8 @@ def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1)):
         RGB values (0-1) for the lowest z-coordinate
     color2 : tuple
         RGB values (0-1) for the highest z-coordinate
+    opacity : float
+        Opacity value (0-1) for the actor
     """
     # Get the mapper and ensure the pipeline is updated
     mapper = actor.GetMapper()
@@ -133,7 +135,7 @@ def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1)):
 
     # Create array for colors
     colors = vtk.vtkUnsignedCharArray()
-    colors.SetNumberOfComponents(3)
+    colors.SetNumberOfComponents(4)  # RGBA
     colors.SetName("Colors")
 
     # Find z-coordinate range
@@ -163,13 +165,137 @@ def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1)):
         r = int((color1[0] * (1 - t) + color2[0] * t) * 255)
         g = int((color1[1] * (1 - t) + color2[1] * t) * 255)
         b = int((color1[2] * (1 - t) + color2[2] * t) * 255)
+        a = int(opacity * 255)
 
-        colors.InsertNextTuple3(r, g, b)
+        colors.InsertNextTuple4(r, g, b, a)
 
     # Add the colors to the polydata
     polydata.GetPointData().SetScalars(colors)
 
     # Update the mapper
+    mapper.SetScalarVisibility(1)
+    mapper.Update()
+
+    return actor
+
+
+def create_parametric_func_surface_actor(
+    parametric_function,
+    u_range=(0, 1),
+    v_range=(0, 1),
+    global_bounds=(-10, 10, -10, 10, -10, 10),
+    color1=(1, 0, 0),
+    color2=(0, 0, 1),
+    opacity=1.0,
+    sample_dims=(100, 100),
+):
+    """
+    Creates a VTK actor for a parametric surface with global bounds clipping and z-gradient coloring.
+
+    Parameters are same as previous implementation.
+    """
+    # Create parametric coordinate grids
+    u = np.linspace(u_range[0], u_range[1], sample_dims[0])
+    v = np.linspace(v_range[0], v_range[1], sample_dims[1])
+    U, V = np.meshgrid(u, v, indexing="ij")
+
+    # Evaluate the parametric function
+    try:
+        X, Y, Z = parametric_function(U, V)
+    except Exception as e:
+        print(f"Error in parametric function evaluation: {e}")
+        return vtk.vtkActor()
+
+    # Validate output
+    if not (X.shape == Y.shape == Z.shape == U.shape):
+        raise ValueError(
+            "Parametric function must return x, y, z arrays of same shape as input"
+        )
+
+    # Global bounds filtering
+    x_min, x_max, y_min, y_max, z_min, z_max = global_bounds
+
+    # Create masks for points within global bounds
+    mask = (
+        (X >= x_min)
+        & (X <= x_max)
+        & (Y >= y_min)
+        & (Y <= y_max)
+        & (Z >= z_min)
+        & (Z <= z_max)
+    )
+
+    # Filter coordinates
+    X_filtered = X[mask]
+    Y_filtered = Y[mask]
+    Z_filtered = Z[mask]
+
+    # Create VTK points
+    points = vtk.vtkPoints()
+
+    # Prepare point data
+    point_data = vtk.vtkDoubleArray()
+    point_data.SetNumberOfComponents(1)
+    point_data.SetName("Z")
+
+    # Add filtered points and z values
+    for x, y, z in zip(X_filtered, Y_filtered, Z_filtered):
+        points.InsertNextPoint(x, y, z)
+        point_data.InsertNextValue(z)
+
+    # Create polydata
+    poly_data = vtk.vtkPolyData()
+    poly_data.SetPoints(points)
+
+    # Create surface using Delaunay triangulation
+    delaunay = vtk.vtkDelaunay2D()
+    delaunay.SetInputData(poly_data)
+    delaunay.Update()
+
+    # Get the triangulated surface
+    surface = delaunay.GetOutput()
+    surface.GetPointData().SetScalars(point_data)
+
+    # Create mapper
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(surface)
+
+    # Create actor
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    # Determine actual z range for coloring
+    actual_z_min = np.min(Z_filtered)
+    actual_z_max = np.max(Z_filtered)
+
+    # Prepare color array
+    colors = vtk.vtkUnsignedCharArray()
+    colors.SetNumberOfComponents(4)  # RGBA
+    colors.SetName("Colors")
+
+    # Compute colors based on z values
+    for i in range(surface.GetNumberOfPoints()):
+        z = surface.GetPoint(i)[2]
+
+        # Calculate normalized position (0 to 1) based on actual z range
+        t = (
+            (z - actual_z_min) / (actual_z_max - actual_z_min)
+            if actual_z_max > actual_z_min
+            else 0.5
+        )
+
+        # Interpolate colors
+        r = int((color1[0] * (1 - t) + color2[0] * t) * 255)
+        g = int((color1[1] * (1 - t) + color2[1] * t) * 255)
+        b = int((color1[2] * (1 - t) + color2[2] * t) * 255)
+        a = int(opacity * 255)
+
+        colors.InsertNextTuple4(r, g, b, a)
+
+    # Add colors to surface
+    surface.GetPointData().SetScalars(colors)
+
+    # Update mapper
     mapper.SetScalarVisibility(1)
     mapper.Update()
 

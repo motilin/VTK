@@ -33,8 +33,13 @@ from src.core.constants import (
 from src.utils.surface_utils import (
     create_func_surface_actor,
     set_z_gradient_coloring,
+    create_parametric_func_surface_actor
 )
-from src.utils.line_utils import create_func_traces_actor, create_parametric_curve_actor
+from src.utils.line_utils import (
+    create_func_traces_actor,
+    create_parametric_curve_actor,
+    create_point_actor,
+)
 import sympy as sp
 from sympy.parsing.sympy_parser import (
     parse_expr,
@@ -52,19 +57,22 @@ class Func:
         self.x_min, self.x_max = X_MIN, X_MAX
         self.y_min, self.y_max = Y_MIN, Y_MAX
         self.z_min, self.z_max = Z_MIN, Z_MAX
+        self.t_range = (0, 1)
         self.u_range = (0, 1)
         self.v_range = (0, 1)
         self.trace_spacing = 1
         self.trace_spacing_bounds = DEFAULT_SLIDER_BOUNDS
         self.thickness = 1
+        self.thickness_bounds = DEFAULT_SLIDER_BOUNDS
         self.dash_spacing = 0
-        self.opacity = 1
+        self.dash_spacing_bounds = DEFAULT_SLIDER_BOUNDS
+        self.opacity = 1.0
         self.color_start = DEFAULT_COLOR_START
         self.color_end = DEFAULT_COLOR_END
         self.line_color = DEFAULT_LINE_COLOR
         self.legal = False
         self.type = None
-        self.show_surface = False
+        self.show_surface = True
         self.show_lines = True
         self.transformations = standard_transformations + (
             implicit_multiplication_application,
@@ -89,19 +97,37 @@ class Func:
 
             if isinstance(expr, tuple):
                 if len(expr) == 3:
-                    u, v = sp.symbols("u v")
+                    u, v, t = sp.symbols("u v t")
                     all_symbols = set.union(*[e.free_symbols for e in expr])
-                    self.coeffs = all_symbols - {u, v}
-                    self.latex = expr.__str__()
-                    self.legal = True
-                    self.type = "parametric"
+                    if (
+                        t in all_symbols
+                        and u not in all_symbols
+                        and v not in all_symbols
+                    ):
+                        self.coeffs = all_symbols - {t}
+                        self.type = "parametric-1"
+                        self.legal = True
+                    elif u in all_symbols and v in all_symbols and t not in all_symbols:
+                        self.coeffs = all_symbols - {u, v}
+                        self.type = "parametric-2"
+                        self.legal = True
+                    elif (
+                        t not in all_symbols
+                        and u not in all_symbols
+                        and v not in all_symbols
+                    ):
+                        self.coeffs = all_symbols
+                        self.type = "point"
+                        self.legal = True
 
-            elif isinstance(exp, sp.Basic):
+            elif isinstance(expr, sp.Basic):
                 x, y, z = sp.symbols("x y z")
                 self.coeffs = expr.free_symbols - {x, y, z}
-                self.latex = sp.latex(expr)
-                self.legal = True
                 self.type = "implicit"
+                self.legal = True
+
+            if self.legal:
+                self.str = expr.__str__()
 
         except Exception as e:
             print(e)
@@ -122,15 +148,23 @@ class Func:
                 raise ValueError(f"Missing coefficient: {coeff}")
 
         # Create a numpy function from the sympy function
-        if isinstance(func, sp.Basic):
+        if isinstance(func, sp.Basic) and self.type == "implicit":
             x, y, z = sp.symbols("x y z")
             np_func = sp.lambdify((x, y, z), func, "numpy")
         elif isinstance(func, tuple):
-            u, v = sp.symbols("u v")
-            np_func = sp.lambdify((u, v), func, "numpy")
+            if self.type == "parametric-1":
+                t = sp.symbols("t")
+                np_func = sp.lambdify(t, func, "numpy")
+            elif self.type == "parametric-2":
+                u, v = sp.symbols("u v")
+                np_func = sp.lambdify((u, v), func, "numpy")
+            elif self.type == "point":
+                np_func = func
 
-        if self.show_surface:
+        if self.show_surface or self.type == "point":
             self.update_surface(np_func, widget.renderer, global_bounds)
+            if self.surface_actor:
+                self.surface_actor.SetVisibility(self.show_surface)
         if self.show_lines:
             self.update_lines(np_func, widget.renderer, global_bounds)
         widget.vtk_widget.get_render_window().Render()
@@ -171,14 +205,30 @@ class Func:
     def update_surface(self, np_func, renderer, global_bounds):
         if self.surface_actor:
             renderer.RemoveActor(self.surface_actor)
+            self.surface_actor = None
         if self.type == "implicit":
             self.surface_actor = create_func_surface_actor(
                 np_func,
                 global_bounds,
             )
             set_z_gradient_coloring(
-                self.surface_actor, self.color_start, self.color_end
+                self.surface_actor, self.color_start, self.color_end, self.opacity
             )
+        elif self.type == "parametric-2":
+            self.surface_actor = create_parametric_func_surface_actor(
+                np_func,
+                self.u_range,
+                self.v_range,
+                global_bounds,
+                self.color_start,
+                self.color_end,
+                self.opacity,
+            )
+        elif self.type == "point":
+            self.surface_actor = create_point_actor(
+                np_func, self.line_color, self.thickness, self.opacity
+            )
+        if self.surface_actor:
             renderer.AddActor(self.surface_actor)
 
     def update_lines(self, np_func, renderer, global_bounds):
@@ -192,20 +242,21 @@ class Func:
                 self.trace_spacing,
                 self.thickness,
                 self.line_color,
+                self.opacity,
             )
-        elif self.type == "parametric":
+        elif self.type == "parametric-1":
             self.lines_actor = create_parametric_curve_actor(
                 np_func,
-                self.u_range,
-                self.v_range,
+                self.t_range,
                 self.line_color,
                 self.thickness,
                 self.opacity,
                 self.dash_spacing,
             )
-        else:
-            raise ValueError("Invalid function type")
-        renderer.AddActor(self.lines_actor)
+        elif self.type == "parametric-2":
+            pass
+        if self.lines_actor:
+            renderer.AddActor(self.lines_actor)
 
     def __eq__(self, other):
         if isinstance(other, Func):
@@ -224,4 +275,4 @@ class Func:
         return hash(str(str(sp.simplify(sp.expand(self.func)))))
 
     def __str__(self):
-        return self.latex
+        return self.str
