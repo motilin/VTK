@@ -1,250 +1,312 @@
 from PyQt5.QtWidgets import (
-    QApplication,
-    QSizePolicy,
-    QWidget,
-    QSlider,
-    QVBoxLayout,
     QLabel,
+    QLineEdit,
+    QHBoxLayout,
+    QWidget,
+    QSpacerItem,
+    QSizePolicy,
 )
-from PyQt5.QtCore import Qt, QRect, QSize
-from PyQt5.QtGui import QPainter, QBrush, QPalette, QPaintEvent, QMouseEvent
-from PyQt5.QtWidgets import QStyle, QStyleOptionSlider, QGridLayout
-from PyQt5.QtCore import pyqtSignal
-from src.core.constants import CONTROL_PANEL_SPACING
+from PyQt5.QtCore import Qt, pyqtSignal, QRectF, QEvent, QSize
+from PyQt5.QtGui import QFont, QDoubleValidator, QColor, QPainter, QBrush, QPen
+
+from qt.slider import BoundsDialog
+from src.core.constants import SCALE_FACTOR, DEFAULT_SLIDER_BOUNDS
+
 
 class RangeSlider(QWidget):
-    valueChanged = pyqtSignal()
+    lowerValueChanged = pyqtSignal(float)
+    upperValueChanged = pyqtSignal(float)
+    rangeChanged = pyqtSignal(float, float)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent, bounds, values, text, update_callback):
         super().__init__(parent)
+        self.bounds = bounds
+        self.values = values
+        self.text = text
+        self.update_callback = update_callback
 
-        self.first_position = 1
-        self.second_position = 8
-        self._first_sc = None
-        self._second_sc = None
+        self.mMinimum, self.mMaximum = bounds
+        self.mLowerValue, self.mUpperValue = values
+        self.mFirstHandlePressed = False
+        self.mSecondHandlePressed = False
+        self.mInterval = self.mMaximum - self.mMinimum
+        self.mBackgroudColorEnabled = QColor(0x1E, 0x90, 0xFF)
+        self.mBackgroudColorDisabled = Qt.darkGray
+        self.mBackgroudColor = self.mBackgroudColorEnabled
+        self.orientation = Qt.Horizontal
 
-        self.opt = QStyleOptionSlider()
-        self.opt.minimum = 0
-        self.opt.maximum = 10
+        self.setMouseTracking(True)
 
-        self.setTickPosition(QSlider.TicksAbove)
-        self.setTickInterval(1)
+        # Create layout with precise spacing
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)  # Set to 0 to control spacing manually
 
-        self.setSizePolicy(
-            QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed, QSizePolicy.Slider)
+        # Create label with right margin
+        self.label = QLabel(self.text)
+        self.label.setAlignment(Qt.AlignLeft)
+        self.label.setFont(QFont("Arial", 10))
+        self.label.setMinimumWidth(50)
+        self.label.setMargin(1)  # Add margin to label
+        self.label.mousePressEvent = self.open_bounds_dialog
+        self.layout.addWidget(self.label)
+
+        # Add small spacer between label and slider
+        label_slider_spacer = QSpacerItem(10, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.layout.addItem(label_slider_spacer)
+
+        # Create slider widget
+        self.slider_widget = QWidget(self)
+        self.slider_layout = QHBoxLayout(self.slider_widget)
+        self.slider_layout.setContentsMargins(0, 0, 0, 0)
+        self.slider_layout.setSpacing(0)
+        self.layout.addWidget(self.slider_widget, 1)
+
+        # Add small spacer between slider and min input
+        slider_input_spacer = QSpacerItem(10, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.layout.addItem(slider_input_spacer)
+
+        # Create min and max value textboxes
+        self.min_input = QLineEdit(f"{self.mLowerValue:.2f}")
+        self.min_input.setFixedWidth(50)
+        self.min_input.setValidator(QDoubleValidator(self.mMinimum, self.mMaximum, 2))
+        self.min_input.editingFinished.connect(self.update_min_value)
+        self.layout.addWidget(self.min_input)
+
+        self.max_input = QLineEdit(f"{self.mUpperValue:.2f}")
+        self.max_input.setFixedWidth(50)
+        self.max_input.setValidator(QDoubleValidator(self.mMinimum, self.mMaximum, 2))
+        self.max_input.editingFinished.connect(self.update_max_value)
+        self.layout.addWidget(self.max_input)
+
+        # Add spacer to stretch the slider bar
+        self.layout.addItem(
+            QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
         )
 
-    def setRangeLimit(self, minimum: int, maximum: int):
-        self.opt.minimum = minimum
-        self.opt.maximum = maximum
-        self.update()
+        # Initial callback trigger
+        self.update_callback(
+            (self.mLowerValue, self.mUpperValue), (self.mMinimum, self.mMaximum)
+        )
 
-    def setRange(self, start: int, end: int):
-        self.first_position = max(self.opt.minimum, min(start, end))
-        self.second_position = min(self.opt.maximum, max(start, end))
-        self.update()
-        self.valueChanged.emit()
-
-    def getRange(self):
-        return (self.first_position, self.second_position)
-
-    def setTickPosition(self, position: QSlider.TickPosition):
-        self.opt.tickPosition = position
-
-    def setTickInterval(self, ti: int):
-        self.opt.tickInterval = ti
-
-    def paintEvent(self, event: QPaintEvent):
+    def paintEvent(self, event):
         painter = QPainter(self)
 
-        # Draw rule
-        self.opt.initFrom(self)
-        self.opt.rect = self.rect()
-        self.opt.sliderPosition = 0
-        self.opt.subControls = QStyle.SC_SliderGroove | QStyle.SC_SliderTickmarks
-
-        # Draw GROOVE
-        self.style().drawComplexControl(QStyle.CC_Slider, self.opt, painter)
-
-        # Draw INTERVAL
-        color = self.palette().color(QPalette.Highlight)
-        color.setAlpha(160)
-        painter.setBrush(QBrush(color))
-        painter.setPen(Qt.NoPen)
-
-        self.opt.sliderPosition = self.first_position
-        x_left_handle = (
-            self.style()
-            .subControlRect(QStyle.CC_Slider, self.opt, QStyle.SC_SliderHandle)
-            .center()
-            .x()
+        # Background
+        backgroundRect = QRectF(
+            self.label.width(),
+            (self.height() - 5) / 2,
+            self.width()
+            - self.label.width()
+            - self.min_input.width()
+            - self.max_input.width()
+            - 10,
+            5,
         )
+        pen = QPen(Qt.gray, 1)
+        painter.setPen(pen)
+        painter.setRenderHint(QPainter.Antialiasing)
+        backgroundBrush = QBrush(QColor(0xD0, 0xD0, 0xD0))
+        painter.setBrush(backgroundBrush)
+        painter.drawRoundedRect(backgroundRect, 1, 1)
 
-        self.opt.sliderPosition = self.second_position
-        x_right_handle = (
-            self.style()
-            .subControlRect(QStyle.CC_Slider, self.opt, QStyle.SC_SliderHandle)
-            .center()
-            .x()
-        )
+        # First value handle rect
+        pen.setColor(Qt.darkGray)
+        pen.setWidth(1)
+        painter.setPen(pen)
+        handleBrush = QBrush(QColor(0xFA, 0xFA, 0xFA))
+        painter.setBrush(handleBrush)
+        leftHandleRect = self.firstHandleRect()
+        painter.drawRoundedRect(leftHandleRect, 2, 2)
 
-        groove_rect = self.style().subControlRect(
-            QStyle.CC_Slider, self.opt, QStyle.SC_SliderGroove
-        )
+        # Second value handle rect
+        rightHandleRect = self.secondHandleRect()
+        painter.drawRoundedRect(rightHandleRect, 2, 2)
 
-        selection = QRect(
-            x_left_handle,
-            groove_rect.y(),
-            x_right_handle - x_left_handle,
-            groove_rect.height(),
-        ).adjusted(-1, 1, 1, -1)
+        # Handles
+        painter.setRenderHint(QPainter.Antialiasing, False)
+        selectedRect = backgroundRect
+        selectedRect.setLeft(leftHandleRect.right() + 0.5)
+        selectedRect.setRight(rightHandleRect.left() - 0.5)
+        selectedBrush = QBrush(self.mBackgroudColor)
+        painter.setBrush(selectedBrush)
+        painter.drawRect(selectedRect)
 
-        painter.drawRect(selection)
+    def firstHandleRect(self):
+        percentage = (self.mLowerValue - self.mMinimum) / self.mInterval
+        return self.handleRect(percentage * self.validLength() + self.label.width())
 
-        # Draw first handle
-        self.opt.subControls = QStyle.SC_SliderHandle
-        self.opt.sliderPosition = self.first_position
-        self.style().drawComplexControl(QStyle.CC_Slider, self.opt, painter)
+    def secondHandleRect(self):
+        percentage = (self.mUpperValue - self.mMinimum) / self.mInterval
+        return self.handleRect(percentage * self.validLength() + self.label.width())
 
-        # Draw second handle
-        self.opt.sliderPosition = self.second_position
-        self.style().drawComplexControl(QStyle.CC_Slider, self.opt, painter)
+    def handleRect(self, value):
+        return QRectF(value, (self.height() - 11) / 2, 11, 11)
 
-    def mousePressEvent(self, event: QMouseEvent):
-        event.accept()
+    def mousePressEvent(self, event):
+        if event.buttons() & Qt.LeftButton:
+            posValue = event.pos().x()
 
-        self.opt.sliderPosition = self.first_position
-        self._first_sc = self.style().hitTestComplexControl(
-            QStyle.CC_Slider, self.opt, event.pos(), self
-        )
+            # Adjust for handle's center
+            firstHandleRect = self.firstHandleRect()
+            secondHandleRect = self.secondHandleRect()
 
-        self.opt.sliderPosition = self.second_position
-        self._second_sc = self.style().hitTestComplexControl(
-            QStyle.CC_Slider, self.opt, event.pos(), self
-        )
+            # Expand hit areas for more precise clicking
+            expanded_first_handle = firstHandleRect.adjusted(-5, -5, 5, 5)
+            expanded_second_handle = secondHandleRect.adjusted(-5, -5, 5, 5)
 
-    def mouseMoveEvent(self, event: QMouseEvent):
-        if not event.buttons() & Qt.LeftButton:
-            return
+            self.mSecondHandlePressed = expanded_second_handle.contains(event.pos())
+            self.mFirstHandlePressed = (
+                not self.mSecondHandlePressed
+                and expanded_first_handle.contains(event.pos())
+            )
 
-        event.accept()
+            if self.mFirstHandlePressed:
+                self.mDelta = posValue - (firstHandleRect.center().x())
+            elif self.mSecondHandlePressed:
+                self.mDelta = posValue - (secondHandleRect.center().x())
 
-        # Calculate slider value based on mouse position
-        pos = self.pixelPosToRangeValue(event.pos())
+            if 2 <= event.pos().y() <= self.height() - 2:
+                step = max(self.mInterval / 10, 0.01)
+                if posValue < firstHandleRect.center().x():
+                    self.setLowerValue(self.mLowerValue - step)
+                elif (
+                    firstHandleRect.center().x()
+                    < posValue
+                    < secondHandleRect.center().x()
+                ):
+                    midpoint = (
+                        firstHandleRect.center().x() + secondHandleRect.center().x()
+                    ) / 2
+                    if posValue < midpoint:
+                        self.setLowerValue(
+                            min(self.mLowerValue + step, self.mUpperValue)
+                        )
+                    else:
+                        self.setUpperValue(
+                            max(self.mUpperValue - step, self.mLowerValue)
+                        )
+                elif posValue > secondHandleRect.center().x():
+                    self.setUpperValue(self.mUpperValue + step)
 
-        if self._first_sc == QStyle.SC_SliderHandle:
-            if pos <= self.second_position:
-                self.first_position = pos
-                self.update()
-                self.valueChanged.emit()
-        elif self._second_sc == QStyle.SC_SliderHandle:
-            if pos >= self.first_position:
-                self.second_position = pos
-                self.update()
-                self.valueChanged.emit()
+    def mouseMoveEvent(self, event):
+        if event.buttons() & Qt.LeftButton:
+            posValue = event.pos().x()
 
-    def mouseReleaseEvent(self, event: QMouseEvent):
-        self._first_sc = None
-        self._second_sc = None
+            if self.mFirstHandlePressed:
+                new_lower_value = (
+                    posValue - self.mDelta - self.label.width()
+                ) / self.validLength() * self.mInterval + self.mMinimum
+                if new_lower_value <= self.mUpperValue:
+                    self.setLowerValue(new_lower_value)
+            elif self.mSecondHandlePressed:
+                new_upper_value = (
+                    posValue - self.mDelta - self.label.width()
+                ) / self.validLength() * self.mInterval + self.mMinimum
+                if new_upper_value >= self.mLowerValue:
+                    self.setUpperValue(new_upper_value)
 
-    def pixelPosToRangeValue(self, pos):
-        opt = QStyleOptionSlider()
-        self.initStyleOption(opt)
+    def mouseReleaseEvent(self, event):
+        self.mFirstHandlePressed = False
+        self.mSecondHandlePressed = False
 
-        groove = self.style().subControlRect(
-            QStyle.CC_Slider, opt, QStyle.SC_SliderGroove, self
-        )
-        handle = self.style().subControlRect(
-            QStyle.CC_Slider, opt, QStyle.SC_SliderHandle, self
-        )
+    def setLowerValue(self, value):
+        value = max(min(value, self.mMaximum), self.mMinimum)
+        if value != self.mLowerValue:
+            self.mLowerValue = value
+            self.min_input.setText(f"{self.mLowerValue:.2f}")
+            self.lowerValueChanged.emit(self.mLowerValue)
+            self.update()
+            # Trigger callback with full range info
+            self.update_callback(
+                (self.mLowerValue, self.mUpperValue), (self.mMinimum, self.mMaximum)
+            )
 
-        if self.orientation() == Qt.Horizontal:
-            sliderLength = handle.width()
-            sliderMin = groove.x()
-            sliderMax = groove.right() - sliderLength + 1
-            pos = pos.x()
-        else:
-            sliderLength = handle.height()
-            sliderMin = groove.y()
-            sliderMax = groove.bottom() - sliderLength + 1
-            pos = pos.y()
+    def setUpperValue(self, value):
+        value = max(min(value, self.mMaximum), self.mMinimum)
+        if value != self.mUpperValue:
+            self.mUpperValue = value
+            self.max_input.setText(f"{self.mUpperValue:.2f}")
+            self.upperValueChanged.emit(self.mUpperValue)
+            self.update()
+            # Trigger callback with full range info
+            self.update_callback(
+                (self.mLowerValue, self.mUpperValue), (self.mMinimum, self.mMaximum)
+            )
 
-        return QStyle.sliderValueFromPosition(
-            self.opt.minimum,
-            self.opt.maximum,
-            pos - sliderMin,
-            sliderMax - sliderMin,
-            opt.upsideDown,
-        )
+    def setMinimum(self, value):
+        if value < self.mMaximum:
+            self.mMinimum = value
+            self.mInterval = self.mMaximum - self.mMinimum
 
-    def initStyleOption(self, option):
-        option.initFrom(self)
-        option.minimum = self.opt.minimum
-        option.maximum = self.opt.maximum
-        option.tickPosition = self.opt.tickPosition
-        option.tickInterval = self.opt.tickInterval
-        option.upsideDown = self.orientation() == Qt.Vertical
-        option.subControls = QStyle.SC_SliderGroove | QStyle.SC_SliderHandle
-        option.activeSubControls = QStyle.SC_None
+            # Adjust current values if they're out of new bounds
+            self.mLowerValue = max(self.mLowerValue, self.mMinimum)
+            self.mUpperValue = max(self.mUpperValue, self.mMinimum)
 
-    def orientation(self):
-        return Qt.Horizontal
+            self.min_input.setText(f"{self.mLowerValue:.2f}")
+            self.max_input.setText(f"{self.mUpperValue:.2f}")
 
-    def sizeHint(self):
-        """override"""
-        SliderLength = 84
-        TickSpace = 5
+            self.update()
+            self.rangeChanged.emit(self.mMinimum, self.mMaximum)
 
-        w = SliderLength
-        h = self.style().pixelMetric(QStyle.PM_SliderThickness, self.opt, self)
+            # Trigger callback with updated range
+            self.update_callback(
+                (self.mLowerValue, self.mUpperValue), (self.mMinimum, self.mMaximum)
+            )
 
-        if (
-            self.opt.tickPosition & QSlider.TicksAbove
-            or self.opt.tickPosition & QSlider.TicksBelow
-        ):
-            h += TickSpace
+    def setMaximum(self, value):
+        if value > self.mMinimum:
+            self.mMaximum = value
+            self.mInterval = self.mMaximum - self.mMinimum
 
+            # Adjust current values if they're out of new bounds
+            self.mLowerValue = min(self.mLowerValue, self.mMaximum)
+            self.mUpperValue = min(self.mUpperValue, self.mMaximum)
+
+            self.min_input.setText(f"{self.mLowerValue:.2f}")
+            self.max_input.setText(f"{self.mUpperValue:.2f}")
+
+            self.update()
+            self.rangeChanged.emit(self.mMinimum, self.mMaximum)
+
+            # Trigger callback with updated range
+            self.update_callback(
+                (self.mLowerValue, self.mUpperValue), (self.mMinimum, self.mMaximum)
+            )
+
+    def validLength(self):
         return (
-            self.style()
-            .sizeFromContents(QStyle.CT_Slider, self.opt, QSize(w, h), self)
-            .expandedTo(QApplication.globalStrut())
+            self.width()
+            - self.label.width()
+            - self.min_input.width()
+            - self.max_input.width()
+            - 10
         )
 
-def add_range_sliders(widget, bounds, layout, update_callback):
-    # Create a grid layout for the sliders
-    slider_layout = QGridLayout()
-    slider_layout.setSpacing(CONTROL_PANEL_SPACING)
+    def update_min_value(self):
+        try:
+            value = float(self.min_input.text())
+            self.setLowerValue(value)
+        except ValueError:
+            # Revert to previous value if invalid input
+            self.min_input.setText(f"{self.mLowerValue:.2f}")
 
-    # X-axis slider
-    x_label = QLabel("X Range")
-    widget.x_slider = RangeSlider()
-    widget.x_slider.setRangeLimit(int(bounds[0]), int(bounds[1]))
-    widget.x_slider.setRange(int(bounds[0]), int(bounds[1]))
-    x_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-    slider_layout.addWidget(x_label)
-    slider_layout.addWidget(widget.x_slider)
+    def update_max_value(self):
+        try:
+            value = float(self.max_input.text())
+            self.setUpperValue(value)
+        except ValueError:
+            # Revert to previous value if invalid input
+            self.max_input.setText(f"{self.mUpperValue:.2f}")
 
-    # Y-axis slider
-    y_label = QLabel("Y Range")
-    widget.y_slider = RangeSlider()
-    widget.y_slider.setRangeLimit(int(bounds[2]), int(bounds[3]))
-    widget.y_slider.setRange(int(bounds[2]), int(bounds[3]))
-    y_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-    slider_layout.addWidget(y_label)
-    slider_layout.addWidget(widget.y_slider)
+    def open_bounds_dialog(self, event):
+        # Position the dialog relative to the label
+        dialog = BoundsDialog(self.text, self.mMinimum, self.mMaximum, self)
+        global_pos = self.label.mapToGlobal(self.label.rect().bottomLeft())
+        dialog.move(global_pos)
 
-    # Z-axis slider
-    z_label = QLabel("Z Range")
-    widget.z_slider = RangeSlider()
-    widget.z_slider.setRangeLimit(int(bounds[4]), int(bounds[5]))
-    widget.z_slider.setRange(int(bounds[4]), int(bounds[5]))
-    z_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-    slider_layout.addWidget(z_label)
-    slider_layout.addWidget(widget.z_slider)
-
-    # Connect slider value changes to the update_callback method
-    widget.x_slider.valueChanged.connect(update_callback)
-    widget.y_slider.valueChanged.connect(update_callback)
-    widget.z_slider.valueChanged.connect(update_callback)
-
-    layout.addLayout(slider_layout)
+        if dialog.exec_():
+            new_min, new_max = dialog.get_bounds()
+            # Update bounds while maintaining current values
+            self.setMinimum(new_min)
+            self.setMaximum(new_max)

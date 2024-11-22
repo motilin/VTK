@@ -109,18 +109,17 @@ class PlotFunc(QWidget):
             "Z range", (self.global_z_min, self.global_z_max), update_z_range
         )
         
-        # def update_t_range(values, bounds):
-        #     if self.active_func:
-        #         print(values)
-        #         print(bounds)
+        def update_t_range(values, bounds):
+            if self.active_func:
+                print(values)
+                print(bounds)
 
-        # t_range_slider = self.control_widget.add_slider(
-        #     DEFAULT_SLIDER_BOUNDS,
-        #     (0, 1),
-        #     "T Range",
-        #     update_t_range,
-        #     dual=True,
-        # )                
+        t_range_slider = self.control_widget.add_range_slider(
+            DEFAULT_SLIDER_BOUNDS,
+            (0, 1),
+            "t",
+            update_t_range,
+        )                
 
         def update_color_start(color):
             if self.active_func:

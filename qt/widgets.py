@@ -17,7 +17,7 @@ from PyQt5.QtCore import Qt
 import vtk
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from src.core.interactor import CustomInteractorStyle
-from qt.range_slider import RangeSlider, add_range_sliders
+from qt.range_slider import RangeSlider
 from qt.slider import Slider
 from src.core.constants import (
     CONTROL_PANEL_WIDTH,
@@ -71,6 +71,11 @@ class ControlWidget(QWidget):
         self.layout.addWidget(slider)
         return slider
 
+    def add_range_slider(self, bounds, values, text, update_callback):
+        slider = RangeSlider(self, bounds, values, text, update_callback)
+        self.layout.addWidget(slider)
+        return slider
+
     def remove_slider_by_label(self, label_text):
         for i in reversed(range(self.layout.count())):
             item = self.layout.itemAt(i)
@@ -79,13 +84,10 @@ class ControlWidget(QWidget):
                 if widget.label.text() == label_text:
                     widget.deleteLater()
 
-    def add_range_sliders(self, bounds, update_callback):
-        add_range_sliders(
-            self,
-            bounds,
-            self.layout,
-            update_callback,
-        )
+    def add_range_sliders(self, bounds, values, text, update_callback):
+        slider = RangeSlider(self, bounds, values, text, update_callback)
+        self.layout.addWidget(slider)
+        return slider
 
     def add_range_text_boxes(self, text, bounds, update_callback):
         label = QLabel(text, self)
