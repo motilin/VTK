@@ -256,6 +256,7 @@ class Func:
                 self.thickness,
                 self.opacity,
                 self.dash_spacing,
+                global_bounds,
             )
         elif self.type == "parametric-2":
             self.lines_actor = create_parametric_surface_traces_actor(

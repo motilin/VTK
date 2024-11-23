@@ -277,6 +277,7 @@ def create_parametric_curve_actor(
     thickness=1.0,  # Tube thickness
     opacity=1.0,  # Actor opacity
     dash_spacing=0.0,  # Dash spacing (0 = solid line)
+    global_bounds=(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX),
 ):
     tube_radius = thickness / 40
     # Dynamic resolution calculation
@@ -288,6 +289,12 @@ def create_parametric_curve_actor(
     # Generate points
     t_min, t_max = t_range
     t_values = np.linspace(t_min, t_max, resolution)
+
+    # Unpack bounds
+    x_min, x_max, y_min, y_max, z_min, z_max = global_bounds
+
+    def is_within_bounds(x, y, z):
+        return x_min <= x <= x_max and y_min <= y <= y_max and z_min <= z <= z_max
 
     # Create points and cells for the complete curve
     points = vtk.vtkPoints()
@@ -306,26 +313,42 @@ def create_parametric_curve_actor(
         while current_point < resolution:
             # Add a dash segment
             if current_point + dash_points <= resolution:
-                line = vtk.vtkPolyLine()
-                line.GetPointIds().SetNumberOfIds(dash_points)
+                # Collect points for this dash segment
+                dash_point_ids = []
                 for i in range(dash_points):
                     idx = current_point + i
                     x, y, z = parametric_func(t_values[idx])
-                    point_id = points.InsertNextPoint(x, y, z)
-                    line.GetPointIds().SetId(i, point_id)
-                lines.InsertNextCell(line)
+                    if is_within_bounds(x, y, z):
+                        point_id = points.InsertNextPoint(x, y, z)
+                        dash_point_ids.append(point_id)
+
+                # Only create line segment if we have at least 2 valid points
+                if len(dash_point_ids) >= 2:
+                    line = vtk.vtkPolyLine()
+                    line.GetPointIds().SetNumberOfIds(len(dash_point_ids))
+                    for i, point_id in enumerate(dash_point_ids):
+                        line.GetPointIds().SetId(i, point_id)
+                    lines.InsertNextCell(line)
+
                 current_point += dash_points + space_points
             else:
                 break
     else:
-        # Create continuous line
-        line = vtk.vtkPolyLine()
-        line.GetPointIds().SetNumberOfIds(resolution)
+        # Create continuous line, collecting only valid points
+        valid_point_ids = []
         for i in range(resolution):
             x, y, z = parametric_func(t_values[i])
-            point_id = points.InsertNextPoint(x, y, z)
-            line.GetPointIds().SetId(i, point_id)
-        lines.InsertNextCell(line)
+            if is_within_bounds(x, y, z):
+                point_id = points.InsertNextPoint(x, y, z)
+                valid_point_ids.append(point_id)
+
+        # Only create line if we have at least 2 valid points
+        if len(valid_point_ids) >= 2:
+            line = vtk.vtkPolyLine()
+            line.GetPointIds().SetNumberOfIds(len(valid_point_ids))
+            for i, point_id in enumerate(valid_point_ids):
+                line.GetPointIds().SetId(i, point_id)
+            lines.InsertNextCell(line)
 
     # Create polydata
     polydata = vtk.vtkPolyData()
@@ -360,20 +383,15 @@ def create_parametric_curve_actor(
         property.SetSpecular(0.3)
         property.SetSpecularPower(100)
         property.SetOpacity(opacity)
-
         # Force translucent rendering
         actor.ForceTranslucentOn()
         actor.GetProperty().BackfaceCullingOff()
-
         # Set surface representation
         property.SetRepresentationToSurface()
-
         # Disable scalar visibility
         mapper.SetScalarVisibility(False)
-
         # Set Phong interpolation
         property.SetInterpolationToPhong()
-
         actor.Modified()
     else:
         property.SetAmbient(0.3)
