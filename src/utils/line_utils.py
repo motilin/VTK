@@ -1,6 +1,15 @@
 import vtk
 import numpy as np
-from src.core.constants import AXES_LENGTH, COLORS
+from src.core.constants import (
+    AXES_LENGTH,
+    COLORS,
+    X_MIN,
+    X_MAX,
+    Y_MIN,
+    Y_MAX,
+    Z_MIN,
+    Z_MAX,
+)
 import vtk.numpy_interface.dataset_adapter as dsa  # type: ignore
 import vtk.util.numpy_support as numpy_support  # type: ignore
 
@@ -211,8 +220,8 @@ def create_func_traces_actor(
     """
     if space == 0:
         return None
-    space = abs(space) 
-    
+    space = abs(space)
+
     # Create append filter to combine all contours
     append_filter = vtk.vtkAppendPolyData()
 
@@ -521,7 +530,7 @@ def create_parametric_surface_traces_actor(
     parametric_function,
     u_range=(0, 1),
     v_range=(0, 1),
-    global_bounds=(-10, 10, -10, 10, -10, 10),
+    global_bounds=(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX),
     trace_spacing=0.1,
     color=vtk.vtkNamedColors().GetColor3d("charcoal"),
     thickness=2,
@@ -535,9 +544,9 @@ def create_parametric_surface_traces_actor(
     returns a VTK actor for the traces that can be added to the renderer.
     """
     if trace_spacing == 0:
-        return None 
+        return None
     trace_spacing = abs(trace_spacing)
-    
+
     append_filter = vtk.vtkAppendPolyData()
 
     # Create u-constant curves

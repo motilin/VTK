@@ -1,12 +1,12 @@
 import sympy as sp
 import numpy as np
 import vtk
-from src.core.constants import COLORS
+from src.core.constants import COLORS, X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX
 
 
 def create_func_surface_actor(
     implicit_function,
-    bounds=(-10, 10, -10, 10, -10, 10),
+    bounds=(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX),
     sample_dims=(100, 100, 100),
     iso_value=0.0,
 ):
@@ -183,7 +183,7 @@ def create_parametric_func_surface_actor(
     parametric_function,
     u_range=(0, 1),
     v_range=(0, 1),
-    global_bounds=(-10, 10, -10, 10, -10, 10),
+    global_bounds=(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX),
     color1=(1, 0, 0),
     color2=(0, 0, 1),
     opacity=1.0,
