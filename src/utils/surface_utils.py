@@ -45,6 +45,9 @@ def create_func_surface_actor(
         print(f"Error: {e}")
         return vtk.vtkActor()
 
+    if not isinstance(scalars, np.ndarray):
+        return vtk.vtkActor()
+
     # Create VTK structured points dataset
     volume = vtk.vtkStructuredPoints()
     volume.SetDimensions(sample_dims)

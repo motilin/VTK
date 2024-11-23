@@ -2,8 +2,7 @@
 Custom interactor styles and related functionality.
 """
 
-import vtk
-import os, sys
+import vtk, os, sys, json
 from vtk import vtkOBJExporter
 
 
@@ -133,12 +132,20 @@ def export_to_png(widget, filepath):
 def save_state(main_widget, filepath):
     """
     Saves the current state of the main widget to a file.
+    main_widget : A subclass of QWidget, like PlotFunc
+    filepath : str
     """
-    pass
+    if not filepath.lower().endswith(".json"):
+        filepath += ".json"
+    state = main_widget.marshalize()
+    with open(filepath, "w") as file:
+        json.dump(state, file, indent=4)
 
 
 def load_state(main_widget, filepath):
     """
     Loads the state of the main widget from a file.
     """
-    pass
+    with open(filepath, "r") as file:
+        state = json.load(file)
+    main_widget.unmarshalize(state)

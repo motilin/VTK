@@ -168,36 +168,42 @@ class PlotFunc(QWidget):
             "Active function", self.func_names, self.update_active_func
         )
 
-        self.control_widget.add_textbox("Functions input:", self.handle_function_input)
+        self.func_input_textbox = self.control_widget.add_textbox("Functions input:", self.handle_function_input)
 
         self.control_widget.add_label("Global settings:")
 
-        self.control_widget.add_range_text_boxes(
-            "X range",
-            (self.global_x_min, self.global_x_max),
-            lambda val: (
-                setattr(self, "global_x_min", val[0]),
-                setattr(self, "global_x_max", val[1]),
-                self.update_global_bounds(),
-            ),
+        self.global_x_label_text, self.global_x_min_text, self.global_x_max_text = (
+            self.control_widget.add_range_text_boxes(
+                "X range",
+                (self.global_x_min, self.global_x_max),
+                lambda val: (
+                    setattr(self, "global_x_min", val[0]),
+                    setattr(self, "global_x_max", val[1]),
+                    self.update_global_bounds(),
+                ),
+            )
         )
-        self.control_widget.add_range_text_boxes(
-            "Y range",
-            (self.global_y_min, self.global_y_max),
-            lambda val: (
-                setattr(self, "global_y_min", val[0]),
-                setattr(self, "global_y_max", val[1]),
-                self.update_global_bounds(),
-            ),
+        self.global_y_label_text, self.global_y_min_text, self.global_y_max_text = (
+            self.control_widget.add_range_text_boxes(
+                "Y range",
+                (self.global_y_min, self.global_y_max),
+                lambda val: (
+                    setattr(self, "global_y_min", val[0]),
+                    setattr(self, "global_y_max", val[1]),
+                    self.update_global_bounds(),
+                ),
+            )
         )
-        self.control_widget.add_range_text_boxes(
-            "Z range",
-            (self.global_z_min, self.global_z_max),
-            lambda val: (
-                setattr(self, "global_z_min", val[0]),
-                setattr(self, "global_z_max", val[1]),
-                self.update_global_bounds(),
-            ),
+        self.global_z_label_text, self.global_z_min_text, self.global_z_max_text = (
+            self.control_widget.add_range_text_boxes(
+                "Z range",
+                (self.global_z_min, self.global_z_max),
+                lambda val: (
+                    setattr(self, "global_z_min", val[0]),
+                    setattr(self, "global_z_max", val[1]),
+                    self.update_global_bounds(),
+                ),
+            )
         )
 
         self.control_widget.add_checkbox(
@@ -492,6 +498,49 @@ class PlotFunc(QWidget):
         self.control_widget.update_dropdown(self.func_dropdown, self.func_names)
 
         # Update the render for each function
+        for func in self.functions:
+            func.update_render(self)
+
+    def marshalize(self):
+        return {
+            "functions": [func.marshalize() for func in self.functions],
+            "background_color": list(self.renderer.GetBackground()),
+            "global_bounds": {
+                "x_min": self.global_x_min,
+                "x_max": self.global_x_max,
+                "y_min": self.global_y_min,
+                "y_max": self.global_y_max,
+                "z_min": self.global_z_min,
+                "z_max": self.global_z_max,
+            },
+        }
+
+    def unmarshalize(self, data):
+        self.renderer.SetBackground(data["background_color"])
+        self.global_x_min = data["global_bounds"]["x_min"]
+        self.global_x_max = data["global_bounds"]["x_max"]
+        self.global_y_min = data["global_bounds"]["y_min"]
+        self.global_y_max = data["global_bounds"]["y_max"]
+        self.global_z_min = data["global_bounds"]["z_min"]
+        self.global_z_max = data["global_bounds"]["z_max"]
+        # self.x_min.setText(str(self.global_x_min))
+        self.global_x_min_text.setText(str(self.global_x_min))
+        self.global_x_max_text.setText(str(self.global_x_max))
+        self.global_y_min_text.setText(str(self.global_y_min))
+        self.global_y_max_text.setText(str(self.global_y_max))
+        self.global_z_min_text.setText(str(self.global_z_min))
+        self.global_z_max_text.setText(str(self.global_z_max))
+        self.update_global_bounds()
+        self.functions = []
+        for func_data in data["functions"]:
+            func = Func("")
+            func.unmarshalize(func_data)
+            self.functions.append(func)
+            self.func_names.append(func.str)
+        self.func_input_textbox.setText("\n".join(self.func_names))
+        self.update_coeff_sliders()
+        self.control_widget.update_dropdown(self.func_dropdown, self.func_names)
+        self.update_active_func(0)
         for func in self.functions:
             func.update_render(self)
 

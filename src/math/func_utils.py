@@ -1,4 +1,4 @@
-import re, copy
+import re, copy, vtk
 import numpy as np
 from numpy import (
     sin,
@@ -312,15 +312,27 @@ class Func:
             "dash_spacing": self.dash_spacing,
             "dash_spacing_bounds": self.dash_spacing_bounds,
             "opacity": self.opacity,
-            "color_start": self.color_start,
-            "color_end": self.color_end,
-            "line_color": self.line_color,
+            "color_start": [
+                self.color_start.GetRed(),
+                self.color_start.GetGreen(),
+                self.color_start.GetBlue(),
+            ],
+            "color_end": [
+                self.color_end.GetRed(),
+                self.color_end.GetGreen(),
+                self.color_end.GetBlue(),
+            ],
+            "line_color": [
+                self.line_color.GetRed(),
+                self.line_color.GetGreen(),
+                self.line_color.GetBlue(),
+            ],
             "legal": self.legal,
             "type": self.type,
             "show_surface": self.show_surface,
             "show_lines": self.show_lines,
         }
-    
+
     def unmarshalize(self, data):
         self.text = data["text"]
         self.x_min = data["x_min"]
@@ -342,12 +354,12 @@ class Func:
         self.dash_spacing = data["dash_spacing"]
         self.dash_spacing_bounds = data["dash_spacing_bounds"]
         self.opacity = data["opacity"]
-        self.color_start = data["color_start"]
-        self.color_end = data["color_end"]
-        self.line_color = data["line_color"]
+        self.color_start = vtk.vtkColor3d(data["color_start"])
+        self.color_end = vtk.vtkColor3d(data["color_end"])
+        self.line_color = vtk.vtkColor3d(data["line_color"])
         self.legal = data["legal"]
         self.type = data["type"]
         self.show_surface = data["show_surface"]
         self.show_lines = data["show_lines"]
         self.parse_function()
-        return self 
+        return self
