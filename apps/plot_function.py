@@ -276,19 +276,19 @@ class PlotFunc(QWidget):
     def update_t_range(self, values, bounds):
         if self.active_func:
             self.active_func.t_range = values
-            self.active_func.t_bounds = bounds
+            self.active_func.t_range_bounds = bounds
             self.active_func.update_render(self)
 
     def update_u_range(self, values, bounds):
         if self.active_func:
             self.active_func.u_range = values
-            self.active_func.u_bounds = bounds
+            self.active_func.u_range_bounds = bounds
             self.active_func.update_render(self)
 
     def update_v_range(self, values, bounds):
         if self.active_func:
             self.active_func.v_range = values
-            self.active_func.v_bounds = bounds
+            self.active_func.v_range_bounds = bounds
             self.active_func.update_render(self)
 
     def update_color_start(self, color):
@@ -354,6 +354,18 @@ class PlotFunc(QWidget):
             self.y_max.setText(str(self.active_func.y_max))
             self.z_min.setText(str(self.active_func.z_min))
             self.z_max.setText(str(self.active_func.z_max))
+            self.t_range_slider.update_slider(
+                self.active_func.t_range_bounds,
+                self.active_func.t_range,
+            )
+            self.u_range_slider.update_slider(
+                self.active_func.u_range_bounds,
+                self.active_func.u_range,
+            )
+            self.v_range_slider.update_slider(
+                self.active_func.v_range_bounds,
+                self.active_func.v_range,
+            )
             self.trace_spacing_slider.set_value(
                 self.active_func.trace_spacing,
                 self.active_func.trace_spacing_bounds,
@@ -362,9 +374,16 @@ class PlotFunc(QWidget):
                 (self.active_func.color_start, self.active_func.color_end),
             )
             self.line_color.set_colors(self.active_func.line_color)
-            self.line_thickness.set_value(self.active_func.thickness, (0.1, 10))
+            self.line_thickness.set_value(
+                self.active_func.thickness, self.active_func.thickness_bounds
+            )
             self.opacity.set_value(self.active_func.opacity, (0, 1))
-            self.dash_spacing.set_value(self.active_func.dash_spacing, (0, 10))
+            self.dash_spacing.set_value(
+                self.active_func.dash_spacing, self.active_func.dash_spacing_bounds
+            )
+            self.dash_spacing.set_value(
+                self.active_func.dash_spacing, self.active_func.dash_spacing_bounds
+            )
             self.show_surface_checkbox.setChecked(self.active_func.show_surface)
             self.show_lines_checkbox.setChecked(self.active_func.show_lines)
             if self.active_func.type == "implicit" or self.active_func.type == "point":

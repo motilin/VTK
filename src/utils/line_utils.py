@@ -209,6 +209,10 @@ def create_func_traces_actor(
     Returns:
         vtkActor object
     """
+    if space == 0:
+        return None
+    space = abs(space) 
+    
     # Create append filter to combine all contours
     append_filter = vtk.vtkAppendPolyData()
 
@@ -530,6 +534,10 @@ def create_parametric_surface_traces_actor(
     traces curve is clipped to the global_bounds given in x,y,z coordinates. The function
     returns a VTK actor for the traces that can be added to the renderer.
     """
+    if trace_spacing == 0:
+        return None 
+    trace_spacing = abs(trace_spacing)
+    
     append_filter = vtk.vtkAppendPolyData()
 
     # Create u-constant curves

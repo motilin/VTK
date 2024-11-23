@@ -315,3 +315,13 @@ class RangeSlider(QWidget):
             # Update bounds while maintaining current values
             self.setMinimum(new_min)
             self.setMaximum(new_max)
+
+    def update_slider(self, bounds, values):
+        self.mMinimum, self.mMaximum = bounds
+        self.mLowerValue, self.mUpperValue = values
+        self.mInterval = self.mMaximum - self.mMinimum
+
+        self.min_input.setText(f"{self.mLowerValue:.2f}")
+        self.max_input.setText(f"{self.mUpperValue:.2f}")
+
+        self.update()
