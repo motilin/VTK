@@ -12,6 +12,9 @@ from PyQt5.QtGui import QFont, QDoubleValidator, QColor, QPainter, QBrush, QPen
 from qt.slider import BoundsDialog
 from src.core.constants import SCALE_FACTOR, DEFAULT_SLIDER_BOUNDS
 
+LABEL_SLIDER_SPACING = 10
+SLIDER_INPUT_SPACING = 10
+MIN_MAX_INPUT_SPACING = 5
 
 class RangeSlider(QWidget):
     lowerValueChanged = pyqtSignal(float)
@@ -45,15 +48,12 @@ class RangeSlider(QWidget):
         # Create label with right margin
         self.label = QLabel(self.text)
         self.label.setAlignment(Qt.AlignLeft)
+        self.label.setAlignment(Qt.AlignVCenter)
         self.label.setFont(QFont("Arial", 10))
-        self.label.setMinimumWidth(50)
+        self.label.setMinimumWidth(20)
         self.label.setMargin(1)  # Add margin to label
         self.label.mousePressEvent = self.open_bounds_dialog
         self.layout.addWidget(self.label)
-
-        # Add small spacer between label and slider
-        label_slider_spacer = QSpacerItem(10, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
-        self.layout.addItem(label_slider_spacer)
 
         # Create slider widget
         self.slider_widget = QWidget(self)
@@ -62,16 +62,15 @@ class RangeSlider(QWidget):
         self.slider_layout.setSpacing(0)
         self.layout.addWidget(self.slider_widget, 1)
 
-        # Add small spacer between slider and min input
-        slider_input_spacer = QSpacerItem(10, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
-        self.layout.addItem(slider_input_spacer)
-
         # Create min and max value textboxes
         self.min_input = QLineEdit(f"{self.mLowerValue:.2f}")
         self.min_input.setFixedWidth(50)
         self.min_input.setValidator(QDoubleValidator(self.mMinimum, self.mMaximum, 2))
         self.min_input.editingFinished.connect(self.update_min_value)
         self.layout.addWidget(self.min_input)
+        
+        min_max_input_spacer = QSpacerItem(MIN_MAX_INPUT_SPACING, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.layout.addItem(min_max_input_spacer)
 
         self.max_input = QLineEdit(f"{self.mUpperValue:.2f}")
         self.max_input.setFixedWidth(50)
@@ -92,15 +91,20 @@ class RangeSlider(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
 
+        # Calculate the actual space available for the slider
+        sliderStart = self.label.width()  # Add spacing after label
+        sliderWidth = (self.width() 
+                      - sliderStart  # Start position
+                      - self.min_input.width()  # Width of min input
+                      - self.max_input.width()  # Width of max input
+                      - SLIDER_INPUT_SPACING  # Spacing before min input (matches your spacer)
+                      - MIN_MAX_INPUT_SPACING)  # Spacing between inputs
+
         # Background
         backgroundRect = QRectF(
-            self.label.width(),
+            sliderStart,
             (self.height() - 5) / 2,
-            self.width()
-            - self.label.width()
-            - self.min_input.width()
-            - self.max_input.width()
-            - 10,
+            sliderWidth,
             5,
         )
         pen = QPen(Qt.gray, 1)
@@ -275,13 +279,14 @@ class RangeSlider(QWidget):
             )
 
     def validLength(self):
-        return (
-            self.width()
-            - self.label.width()
-            - self.min_input.width()
-            - self.max_input.width()
-            - 10
-        )
+        # Update to match the calculation in paintEvent
+        return (self.width() 
+                - self.label.width() 
+                - LABEL_SLIDER_SPACING  # Label spacing
+                - self.min_input.width() 
+                - self.max_input.width() 
+                - SLIDER_INPUT_SPACING # Spacing before min input
+                - MIN_MAX_INPUT_SPACING)  # Spacing between inputs
 
     def update_min_value(self):
         try:

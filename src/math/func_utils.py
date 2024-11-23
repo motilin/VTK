@@ -33,12 +33,12 @@ from src.core.constants import (
 from src.utils.surface_utils import (
     create_func_surface_actor,
     set_z_gradient_coloring,
-    create_parametric_func_surface_actor
+    create_parametric_func_surface_actor,
+    create_point_actor,
 )
 from src.utils.line_utils import (
     create_func_traces_actor,
     create_parametric_curve_actor,
-    create_point_actor,
 )
 import sympy as sp
 from sympy.parsing.sympy_parser import (
@@ -60,6 +60,9 @@ class Func:
         self.t_range = (0, 1)
         self.u_range = (0, 1)
         self.v_range = (0, 1)
+        self.t_range_bounds = DEFAULT_SLIDER_BOUNDS
+        self.u_range_bounds = DEFAULT_SLIDER_BOUNDS
+        self.v_range_bounds = DEFAULT_SLIDER_BOUNDS
         self.trace_spacing = 1
         self.trace_spacing_bounds = DEFAULT_SLIDER_BOUNDS
         self.thickness = 1
@@ -226,7 +229,7 @@ class Func:
             )
         elif self.type == "point":
             self.surface_actor = create_point_actor(
-                np_func, self.line_color, self.thickness, self.opacity
+                np_func, self.line_color, self.thickness, self.opacity, global_bounds
             )
         if self.surface_actor:
             renderer.AddActor(self.surface_actor)

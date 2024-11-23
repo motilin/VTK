@@ -125,7 +125,7 @@ class ControlWidget(QWidget):
         range_layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addLayout(range_layout)
 
-        return min_text_box, max_text_box
+        return label, min_text_box, max_text_box
 
     def add_button(self, text, callback):
         button = QPushButton(text, self)

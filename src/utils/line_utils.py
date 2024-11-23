@@ -371,33 +371,3 @@ def create_parametric_curve_actor(
     return actor
 
 
-def create_point_actor(
-    coordinates,  # Point coordinates (x, y, z)
-    color=COLORS.GetColor3d("charcoal"),  # Actor color
-    thickness=1.0,  # Sphere thickness
-    opacity=1.0,  # Actor opacity
-):
-    radius = thickness / 20
-
-    # Create sphere source
-    sphere = vtk.vtkSphereSource()
-    sphere.SetCenter(coordinates)
-    sphere.SetRadius(radius)
-    sphere.SetPhiResolution(24)
-    sphere.SetThetaResolution(24)
-   
-    # Create mapper
-    mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInputConnection(sphere.GetOutputPort()) 
-    
-    # Create an actor for the sphere
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
-    actor.GetProperty().SetColor(color)
-    actor.GetProperty().SetOpacity(opacity)
-    actor.GetProperty().SetAmbient(0.3)
-    actor.GetProperty().SetDiffuse(0.7)
-    actor.GetProperty().SetSpecular(0.2)
-    actor.GetProperty().SetSpecularPower(20)
-    
-    return actor

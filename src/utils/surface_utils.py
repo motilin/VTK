@@ -300,3 +300,44 @@ def create_parametric_func_surface_actor(
     mapper.Update()
 
     return actor
+
+def create_point_actor(
+    coordinates,  # Point coordinates (x, y, z)
+    color=COLORS.GetColor3d("charcoal"),  # Actor color
+    thickness=1.0,  # Sphere thickness
+    opacity=1.0,  # Actor opacity
+    global_bounds=None,  # Global bounds for clipping
+):
+    if global_bounds:
+        x_min, x_max, y_min, y_max, z_min, z_max = global_bounds
+        if not (x_min <= coordinates[0] <= x_max):
+            return None
+        if not (y_min <= coordinates[1] <= y_max):
+            return None
+        if not (z_min <= coordinates[2] <= z_max):
+            return None 
+    
+    radius = thickness / 20
+
+    # Create sphere source
+    sphere = vtk.vtkSphereSource()
+    sphere.SetCenter(coordinates)
+    sphere.SetRadius(radius)
+    sphere.SetPhiResolution(24)
+    sphere.SetThetaResolution(24)
+   
+    # Create mapper
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(sphere.GetOutputPort()) 
+    
+    # Create an actor for the sphere
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().SetColor(color)
+    actor.GetProperty().SetOpacity(opacity)
+    actor.GetProperty().SetAmbient(0.3)
+    actor.GetProperty().SetDiffuse(0.7)
+    actor.GetProperty().SetSpecular(0.2)
+    actor.GetProperty().SetSpecularPower(20)
+    
+    return actor

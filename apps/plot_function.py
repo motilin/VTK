@@ -85,7 +85,7 @@ class PlotFunc(QWidget):
                 self.active_func.x_max = val[1]
                 self.active_func.update_render(self)
 
-        x_min, x_max = self.control_widget.add_range_text_boxes(
+        x_label, x_min, x_max = self.control_widget.add_range_text_boxes(
             "X range", (self.global_x_min, self.global_x_max), update_x_range
         )
 
@@ -95,7 +95,7 @@ class PlotFunc(QWidget):
                 self.active_func.y_max = val[1]
                 self.active_func.update_render(self)
 
-        y_min, y_max = self.control_widget.add_range_text_boxes(
+        y_label, y_min, y_max = self.control_widget.add_range_text_boxes(
             "Y range", (self.global_y_min, self.global_y_max), update_y_range
         )
 
@@ -105,21 +105,51 @@ class PlotFunc(QWidget):
                 self.active_func.z_max = val[1]
                 self.active_func.update_render(self)
 
-        z_min, z_max = self.control_widget.add_range_text_boxes(
+        z_label, z_min, z_max = self.control_widget.add_range_text_boxes(
             "Z range", (self.global_z_min, self.global_z_max), update_z_range
         )
-        
+
         def update_t_range(values, bounds):
             if self.active_func:
-                print(values)
-                print(bounds)
+                self.active_func.t_range = values
+                self.active_func.t_bounds = bounds
+                self.active_func.update_render(self)
 
         t_range_slider = self.control_widget.add_range_slider(
             DEFAULT_SLIDER_BOUNDS,
             (0, 1),
             "t",
             update_t_range,
-        )                
+        )
+        t_range_slider.setVisible(False)
+
+        def update_u_range(values, bounds):
+            if self.active_func:
+                self.active_func.u_range = values
+                self.active_func.u_bounds = bounds
+                self.active_func.update_render(self)
+
+        u_range_slider = self.control_widget.add_range_slider(
+            DEFAULT_SLIDER_BOUNDS,
+            (0, 1),
+            "u",
+            update_u_range,
+        )
+        u_range_slider.setVisible(False)
+
+        def update_v_range(values, bounds):
+            if self.active_func:
+                self.active_func.v_range = values
+                self.active_func.v_bounds = bounds
+                self.active_func.update_render(self)
+
+        v_range_slider = self.control_widget.add_range_slider(
+            DEFAULT_SLIDER_BOUNDS,
+            (0, 1),
+            "v",
+            update_v_range,
+        )
+        v_range_slider.setVisible(False)
 
         def update_color_start(color):
             if self.active_func:
@@ -249,6 +279,48 @@ class PlotFunc(QWidget):
                 dash_spacing.set_value(self.active_func.dash_spacing, (0, 10))
                 show_surface_checkbox.setChecked(self.active_func.show_surface)
                 show_lines_checkbox.setChecked(self.active_func.show_lines)
+                if (
+                    self.active_func.type == "implicit"
+                    or self.active_func.type == "point"
+                ):  
+                    x_label.setVisible(True)
+                    x_min.setVisible(True)
+                    x_max.setVisible(True)
+                    y_label.setVisible(True)
+                    y_min.setVisible(True)
+                    y_max.setVisible(True)
+                    z_label.setVisible(True)
+                    z_min.setVisible(True)
+                    z_max.setVisible(True)
+                    t_range_slider.setVisible(False)
+                    u_range_slider.setVisible(False)
+                    v_range_slider.setVisible(False)
+                elif self.active_func.type == "parametric-1":
+                    x_label.setVisible(False)
+                    x_min.setVisible(False)
+                    x_max.setVisible(False)
+                    y_label.setVisible(False)
+                    y_min.setVisible(False)
+                    y_max.setVisible(False)
+                    z_label.setVisible(False)
+                    z_min.setVisible(False)
+                    z_max.setVisible(False)
+                    t_range_slider.setVisible(True)
+                    u_range_slider.setVisible(False)
+                    v_range_slider.setVisible(False)
+                elif self.active_func.type == "parametric-2":
+                    x_label.setVisible(False)
+                    x_min.setVisible(False)
+                    x_max.setVisible(False)
+                    y_label.setVisible(False)
+                    y_min.setVisible(False)
+                    y_max.setVisible(False)
+                    z_label.setVisible(False)
+                    z_min.setVisible(False)
+                    z_max.setVisible(False)
+                    t_range_slider.setVisible(False)
+                    u_range_slider.setVisible(True)
+                    v_range_slider.setVisible(True)
 
         func_dropdown = self.control_widget.add_dropdown(
             "Active function", self.func_names, update_active_func
