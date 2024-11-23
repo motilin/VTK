@@ -187,16 +187,76 @@ def create_parametric_func_surface_actor(
     color1=(1, 0, 0),
     color2=(0, 0, 1),
     opacity=1.0,
-    sample_dims=(100, 100),
+    min_samples=20,
+    max_samples=100,
 ):
     """
-    Creates a VTK actor for a parametric surface with global bounds clipping and z-gradient coloring.
+    Creates a VTK actor for a parametric surface with controlled cell connectivity.
 
-    Parameters are same as previous implementation.
+    Parameters:
+        parametric_function: Function that takes (U, V) and returns (X, Y, Z)
+        u_range, v_range: Tuple of (min, max) for parameters
+        global_bounds: Tuple of (x_min, x_max, y_min, y_max, z_min, z_max)
+        color1, color2: RGB tuples for gradient coloring
+        opacity: Surface opacity (0 to 1)
+        min_samples: Minimum number of samples per dimension
+        max_samples: Maximum number of samples per dimension
     """
-    # Create parametric coordinate grids
-    u = np.linspace(u_range[0], u_range[1], sample_dims[0])
-    v = np.linspace(v_range[0], v_range[1], sample_dims[1])
+
+    def estimate_sampling_density(
+        func, param_range, other_range, is_u=True, test_samples=100
+    ):
+        """Estimate required sampling density based on function variation"""
+        p = np.linspace(param_range[0], param_range[1], test_samples)
+        dp = (param_range[1] - param_range[0]) / (test_samples - 1)
+
+        test_vals_x = np.zeros(test_samples)
+        test_vals_y = np.zeros(test_samples)
+        test_vals_z = np.zeros(test_samples)
+
+        other_mid = (other_range[0] + other_range[1]) / 2
+
+        for i, pi in enumerate(p):
+            if is_u:
+                U, V = np.meshgrid([pi], [other_mid])
+            else:
+                U, V = np.meshgrid([other_mid], [pi])
+
+            X, Y, Z = func(U, V)
+            test_vals_x[i] = X.flatten()[0]
+            test_vals_y[i] = Y.flatten()[0]
+            test_vals_z[i] = Z.flatten()[0]
+
+        test_vals = np.vstack((test_vals_x, test_vals_y, test_vals_z)).T
+
+        # Calculate numerical derivatives
+        derivatives = np.diff(test_vals, axis=0) / dp
+
+        # Calculate curvature using finite differences
+        second_derivatives = np.diff(derivatives, axis=0) / dp
+
+        # Estimate required samples based on maximum curvature
+        max_curvature = np.max(np.abs(second_derivatives))
+
+        if max_curvature < 1e-6:
+            return min_samples
+
+        suggested_samples = int(
+            np.sqrt(max_curvature) * (max_samples - min_samples) + min_samples
+        )
+        return min(max_samples, max(min_samples, suggested_samples))
+
+    # Determine adaptive sampling for each dimension
+    u_samples = estimate_sampling_density(
+        parametric_function, u_range, v_range, is_u=True
+    )
+    v_samples = estimate_sampling_density(
+        parametric_function, v_range, u_range, is_u=False
+    )
+
+    # Create parametric coordinate grids with adaptive sampling
+    u = np.linspace(u_range[0], u_range[1], u_samples)
+    v = np.linspace(v_range[0], v_range[1], v_samples)
     U, V = np.meshgrid(u, v, indexing="ij")
 
     # Evaluate the parametric function
@@ -214,8 +274,6 @@ def create_parametric_func_surface_actor(
 
     # Global bounds filtering
     x_min, x_max, y_min, y_max, z_min, z_max = global_bounds
-
-    # Create masks for points within global bounds
     mask = (
         (X >= x_min)
         & (X <= x_max)
@@ -225,81 +283,95 @@ def create_parametric_func_surface_actor(
         & (Z <= z_max)
     )
 
-    # Filter coordinates
-    X_filtered = X[mask]
-    Y_filtered = Y[mask]
-    Z_filtered = Z[mask]
-
-    # Create VTK points
-    points = vtk.vtkPoints()
-
-    # Prepare point data
-    point_data = vtk.vtkDoubleArray()
-    point_data.SetNumberOfComponents(1)
-    point_data.SetName("Z")
-
-    # Add filtered points and z values
-    for x, y, z in zip(X_filtered, Y_filtered, Z_filtered):
-        points.InsertNextPoint(x, y, z)
-        point_data.InsertNextValue(z)
-
     # Create polydata
-    poly_data = vtk.vtkPolyData()
-    poly_data.SetPoints(points)
+    polydata = vtk.vtkPolyData()
+    points = vtk.vtkPoints()
+    cells = vtk.vtkCellArray()
 
-    # Create surface using Delaunay triangulation
-    delaunay = vtk.vtkDelaunay2D()
-    delaunay.SetInputData(poly_data)
-    delaunay.Update()
+    # Create colors array
+    colors = vtk.vtkUnsignedCharArray()
+    colors.SetNumberOfComponents(4)
+    colors.SetName("Colors")
 
-    # Get the triangulated surface
-    surface = delaunay.GetOutput()
-    surface.GetPointData().SetScalars(point_data)
+    # Find z range for color mapping
+    z_min = np.min(Z[mask]) if np.any(mask) else np.min(Z)
+    z_max = np.max(Z[mask]) if np.any(mask) else np.max(Z)
+    z_range = z_max - z_min if z_max > z_min else 1.0
+
+    # Create point to index mapping
+    point_indices = -np.ones((u_samples, v_samples), dtype=int)
+    current_index = 0
+
+    # First pass: add points and store their indices
+    for i in range(u_samples):
+        for j in range(v_samples):
+            if mask[i, j]:
+                x, y, z = X[i, j], Y[i, j], Z[i, j]
+                points.InsertNextPoint(x, y, z)
+
+                # Calculate color based on z-value
+                t = (z - z_min) / z_range if z_range > 0 else 0.5
+                r = int((color1[0] * (1 - t) + color2[0] * t) * 255)
+                g = int((color1[1] * (1 - t) + color2[1] * t) * 255)
+                b = int((color1[2] * (1 - t) + color2[2] * t) * 255)
+                a = int(opacity * 255)
+                colors.InsertNextTuple4(r, g, b, a)
+
+                point_indices[i, j] = current_index
+                current_index += 1
+
+    # Second pass: create quad cells
+    for i in range(u_samples - 1):
+        for j in range(v_samples - 1):
+            # Get indices for the four corners of the quad
+            idx00 = point_indices[i, j]
+            idx10 = point_indices[i + 1, j]
+            idx01 = point_indices[i, j + 1]
+            idx11 = point_indices[i + 1, j + 1]
+
+            # Only create cell if all points are valid and at least one point is in bounds
+            if idx00 >= 0 and idx10 >= 0 and idx01 >= 0 and idx11 >= 0:
+                # Check if points are within a reasonable distance
+                p00 = np.array([X[i, j], Y[i, j], Z[i, j]])
+                p10 = np.array([X[i + 1, j], Y[i + 1, j], Z[i + 1, j]])
+                p01 = np.array([X[i, j + 1], Y[i, j + 1], Z[i, j + 1]])
+                p11 = np.array([X[i + 1, j + 1], Y[i + 1, j + 1], Z[i + 1, j + 1]])
+
+                # Calculate edge lengths
+                d1 = np.linalg.norm(p10 - p00)
+                d2 = np.linalg.norm(p01 - p00)
+                d3 = np.linalg.norm(p11 - p10)
+                d4 = np.linalg.norm(p11 - p01)
+
+                # Calculate average edge length
+                avg_edge = (d1 + d2 + d3 + d4) / 4
+                max_edge = max(d1, d2, d3, d4)
+
+                # Only create quad if edges are reasonably similar in length
+                if max_edge < 3 * avg_edge:
+                    quad = vtk.vtkQuad()
+                    quad.GetPointIds().SetId(0, idx00)
+                    quad.GetPointIds().SetId(1, idx10)
+                    quad.GetPointIds().SetId(2, idx11)
+                    quad.GetPointIds().SetId(3, idx01)
+                    cells.InsertNextCell(quad)
+
+    # Set the points and cells in the polydata
+    polydata.SetPoints(points)
+    polydata.SetPolys(cells)
+    polydata.GetPointData().SetScalars(colors)
 
     # Create mapper
     mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInputData(surface)
+    mapper.SetInputData(polydata)
+    mapper.SetScalarVisibility(1)
 
     # Create actor
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
 
-    # Determine actual z range for coloring
-    actual_z_min = np.min(Z_filtered)
-    actual_z_max = np.max(Z_filtered)
-
-    # Prepare color array
-    colors = vtk.vtkUnsignedCharArray()
-    colors.SetNumberOfComponents(4)  # RGBA
-    colors.SetName("Colors")
-
-    # Compute colors based on z values
-    for i in range(surface.GetNumberOfPoints()):
-        z = surface.GetPoint(i)[2]
-
-        # Calculate normalized position (0 to 1) based on actual z range
-        t = (
-            (z - actual_z_min) / (actual_z_max - actual_z_min)
-            if actual_z_max > actual_z_min
-            else 0.5
-        )
-
-        # Interpolate colors
-        r = int((color1[0] * (1 - t) + color2[0] * t) * 255)
-        g = int((color1[1] * (1 - t) + color2[1] * t) * 255)
-        b = int((color1[2] * (1 - t) + color2[2] * t) * 255)
-        a = int(opacity * 255)
-
-        colors.InsertNextTuple4(r, g, b, a)
-
-    # Add colors to surface
-    surface.GetPointData().SetScalars(colors)
-
-    # Update mapper
-    mapper.SetScalarVisibility(1)
-    mapper.Update()
-
     return actor
+
 
 def create_point_actor(
     coordinates,  # Point coordinates (x, y, z)
@@ -315,8 +387,8 @@ def create_point_actor(
         if not (y_min <= coordinates[1] <= y_max):
             return None
         if not (z_min <= coordinates[2] <= z_max):
-            return None 
-    
+            return None
+
     radius = thickness / 20
 
     # Create sphere source
@@ -325,11 +397,11 @@ def create_point_actor(
     sphere.SetRadius(radius)
     sphere.SetPhiResolution(24)
     sphere.SetThetaResolution(24)
-   
+
     # Create mapper
     mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInputConnection(sphere.GetOutputPort()) 
-    
+    mapper.SetInputConnection(sphere.GetOutputPort())
+
     # Create an actor for the sphere
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
@@ -339,5 +411,5 @@ def create_point_actor(
     actor.GetProperty().SetDiffuse(0.7)
     actor.GetProperty().SetSpecular(0.2)
     actor.GetProperty().SetSpecularPower(20)
-    
+
     return actor

@@ -3,7 +3,7 @@ Custom interactor styles and related functionality.
 """
 
 import vtk
-import sys
+import os, sys
 from vtk import vtkOBJExporter
 
 
@@ -65,7 +65,7 @@ def set_mathematical_view(renderer):
     renderer.ResetCamera()
 
 
-def export_to_obj(widget, filename):
+def export_to_obj(widget, filepath):
     """
     Exports the current view of the renderer to an OBJ file.
 
@@ -73,17 +73,31 @@ def export_to_obj(widget, filename):
     -----------
     widget: QWidget
         The widget containing the renderer
-    filename : str
-        The name of the OBJ file to save
+    filepath : str
+        The complete filepath where the OBJ file should be saved
+        (including directory path and filename)
     """
+    # Extract directory and basename from the full filepath
+    directory = os.path.dirname(filepath)
+    basename = os.path.splitext(os.path.basename(filepath))[0]
+
+    # If directory doesn't exist, create it
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Construct the full path for the exporter
+    # If directory is empty (current directory), just use basename
+    file_prefix = os.path.join(directory, basename) if directory else basename
+
+    # Set up and execute the export
     render_window = widget.interactor.GetRenderWindow()
     exporter = vtkOBJExporter()
-    exporter.SetFilePrefix(filename)
+    exporter.SetFilePrefix(file_prefix)
     exporter.SetInput(render_window)
     exporter.Write()
 
 
-def export_to_png(widget, filename):
+def export_to_png(widget, filepath):
     """
     Exports the current view of the renderer to a PNG file.
 
@@ -91,15 +105,40 @@ def export_to_png(widget, filename):
     -----------
     widget: QWidget
         The widget containing the renderer
-    filename : str
-        The name of the PNG file to save
+    filepath : str
+        The complete filepath where the PNG file should be saved
+        (including directory path and filename)
     """
+    # Ensure the directory exists
+    directory = os.path.dirname(filepath)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # If the filepath doesn't end in .png, add it
+    if not filepath.lower().endswith(".png"):
+        filepath += ".png"
+
+    # Set up and execute the export
     render_window = widget.interactor.GetRenderWindow()
     window_to_image_filter = vtk.vtkWindowToImageFilter()
     window_to_image_filter.SetInput(render_window)
     window_to_image_filter.Update()
 
     writer = vtk.vtkPNGWriter()
-    writer.SetFileName(filename + ".png")
+    writer.SetFileName(filepath)
     writer.SetInputConnection(window_to_image_filter.GetOutputPort())
     writer.Write()
+
+
+def save_state(main_widget, filepath):
+    """
+    Saves the current state of the main widget to a file.
+    """
+    pass
+
+
+def load_state(main_widget, filepath):
+    """
+    Loads the state of the main widget from a file.
+    """
+    pass

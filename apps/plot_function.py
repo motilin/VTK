@@ -78,322 +78,97 @@ class PlotFunc(QWidget):
         )
         self.cube_axes.SetVisibility(False)
 
-        # Populate the control widget
-        def update_x_range(val):
-            if self.active_func:
-                self.active_func.x_min = val[0]
-                self.active_func.x_max = val[1]
-                self.active_func.update_render(self)
-
-        x_label, x_min, x_max = self.control_widget.add_range_text_boxes(
-            "X range", (self.global_x_min, self.global_x_max), update_x_range
+        self.x_label, self.x_min, self.x_max = self.control_widget.add_range_text_boxes(
+            "X range", (self.global_x_min, self.global_x_max), self.update_x_range
         )
 
-        def update_y_range(val):
-            if self.active_func:
-                self.active_func.y_min = val[0]
-                self.active_func.y_max = val[1]
-                self.active_func.update_render(self)
-
-        y_label, y_min, y_max = self.control_widget.add_range_text_boxes(
-            "Y range", (self.global_y_min, self.global_y_max), update_y_range
+        self.y_label, self.y_min, self.y_max = self.control_widget.add_range_text_boxes(
+            "Y range", (self.global_y_min, self.global_y_max), self.update_y_range
         )
 
-        def update_z_range(val):
-            if self.active_func:
-                self.active_func.z_min = val[0]
-                self.active_func.z_max = val[1]
-                self.active_func.update_render(self)
-
-        z_label, z_min, z_max = self.control_widget.add_range_text_boxes(
-            "Z range", (self.global_z_min, self.global_z_max), update_z_range
+        self.z_label, self.z_min, self.z_max = self.control_widget.add_range_text_boxes(
+            "Z range", (self.global_z_min, self.global_z_max), self.update_z_range
         )
 
-        def update_t_range(values, bounds):
-            if self.active_func:
-                self.active_func.t_range = values
-                self.active_func.t_bounds = bounds
-                self.active_func.update_render(self)
-
-        t_range_slider = self.control_widget.add_range_slider(
+        self.t_range_slider = self.control_widget.add_range_slider(
             DEFAULT_SLIDER_BOUNDS,
             (0, 1),
             "t",
-            update_t_range,
+            self.update_t_range,
         )
-        t_range_slider.setVisible(False)
+        self.t_range_slider.setVisible(False)
 
-        def update_u_range(values, bounds):
-            if self.active_func:
-                self.active_func.u_range = values
-                self.active_func.u_bounds = bounds
-                self.active_func.update_render(self)
-
-        u_range_slider = self.control_widget.add_range_slider(
+        self.u_range_slider = self.control_widget.add_range_slider(
             DEFAULT_SLIDER_BOUNDS,
             (0, 1),
             "u",
-            update_u_range,
+            self.update_u_range,
         )
-        u_range_slider.setVisible(False)
+        self.u_range_slider.setVisible(False)
 
-        def update_v_range(values, bounds):
-            if self.active_func:
-                self.active_func.v_range = values
-                self.active_func.v_bounds = bounds
-                self.active_func.update_render(self)
-
-        v_range_slider = self.control_widget.add_range_slider(
+        self.v_range_slider = self.control_widget.add_range_slider(
             DEFAULT_SLIDER_BOUNDS,
             (0, 1),
             "v",
-            update_v_range,
+            self.update_v_range,
         )
-        v_range_slider.setVisible(False)
+        self.v_range_slider.setVisible(False)
 
-        def update_color_start(color):
-            if self.active_func:
-                self.active_func.color_start = color
-                self.active_func.update_render(self)
-
-        def update_color_end(color):
-            if self.active_func:
-                self.active_func.color_end = color
-                self.active_func.update_render(self)
-
-        surface_colors = self.control_widget.add_color_picker(
+        self.surface_colors = self.control_widget.add_color_picker(
             "Surface colors",
             (DEFAULT_COLOR_START, DEFAULT_COLOR_END),
-            (update_color_start, update_color_end),
+            (self.update_color_start, self.update_color_end),
             dual=True,
         )
 
-        def update_line_color(color):
-            if self.active_func:
-                self.active_func.line_color = color
-                self.active_func.update_render(self)
-
-        line_color = self.control_widget.add_color_picker(
+        self.line_color = self.control_widget.add_color_picker(
             "Line color",
             DEFAULT_LINE_COLOR,
-            update_line_color,
+            self.update_line_color,
         )
 
-        def update_trace_spacing(val, bounds):
-            if self.active_func:
-                self.active_func.trace_spacing = val
-                self.active_func.trace_spacing_bounds = bounds
-                self.active_func.update_render(self)
-
-        trace_spacing_slider = self.control_widget.add_slider(
-            DEFAULT_SLIDER_BOUNDS, 1, "Trace Spacing", update_trace_spacing
+        self.trace_spacing_slider = self.control_widget.add_slider(
+            DEFAULT_SLIDER_BOUNDS, 1, "Trace Spacing", self.update_trace_spacing
         )
 
-        def update_line_thickness(val, bounds):
-            if self.active_func:
-                self.active_func.thickness = val
-                self.active_func.thickness_bounds = bounds
-                self.active_func.update_render(self)
-
-        line_thickness = self.control_widget.add_slider(
+        self.line_thickness = self.control_widget.add_slider(
             DEFAULT_SLIDER_BOUNDS,
             2,
             "Line Thickness",
-            update_line_thickness,
+            self.update_line_thickness,
         )
 
-        def update_opacity(val, bounds):
-            if self.active_func:
-                self.active_func.opacity = val
-                self.active_func.update_render(self)
-
-        opacity = self.control_widget.add_slider(
+        self.opacity = self.control_widget.add_slider(
             (0, 1),
             1,
             "Opacity",
-            update_opacity,
+            self.update_opacity,
         )
 
-        def update_dash_spacing(val, bounds):
-            if self.active_func:
-                self.active_func.dash_spacing = val
-                self.active_func.dash_spacing_bounds = bounds
-                self.active_func.update_render(self)
-
-        dash_spacing = self.control_widget.add_slider(
+        self.dash_spacing = self.control_widget.add_slider(
             DEFAULT_SLIDER_BOUNDS,
             0,
             "Dash Spacing",
-            update_dash_spacing,
+            self.update_dash_spacing,
         )
 
-        def set_show_surface(state):
-            if self.active_func:
-                self.active_func.show_surface = state
-                self.active_func.update_render(self)
-                if self.active_func.surface_actor:
-                    self.active_func.surface_actor.SetVisibility(state)
-                self.vtk_widget.get_render_window().Render()
-
-        show_surface_checkbox = self.control_widget.add_checkbox(
+        self.show_surface_checkbox = self.control_widget.add_checkbox(
             "Surface",
             False,
-            set_show_surface,
+            self.set_show_surface,
         )
 
-        def set_show_lines(state):
-            if self.active_func:
-                self.active_func.show_lines = state
-                self.active_func.update_render(self)
-                if self.active_func.lines_actor:
-                    self.active_func.lines_actor.SetVisibility(state)
-                self.vtk_widget.get_render_window().Render()
-
-        show_lines_checkbox = self.control_widget.add_checkbox(
+        self.show_lines_checkbox = self.control_widget.add_checkbox(
             "Lines",
             True,
-            set_show_lines,
+            self.set_show_lines,
         )
 
-        def update_active_func(idx):
-            if idx != -1 and len(self.functions) > idx:
-                self.active_func = self.functions[idx]
-                x_min.setText(str(self.active_func.x_min))
-                x_max.setText(str(self.active_func.x_max))
-                y_min.setText(str(self.active_func.y_min))
-                y_max.setText(str(self.active_func.y_max))
-                z_min.setText(str(self.active_func.z_min))
-                z_max.setText(str(self.active_func.z_max))
-                trace_spacing_slider.set_value(
-                    self.active_func.trace_spacing,
-                    self.active_func.trace_spacing_bounds,
-                )
-                surface_colors.set_colors(
-                    (self.active_func.color_start, self.active_func.color_end),
-                )
-                line_color.set_colors(self.active_func.line_color)
-                line_thickness.set_value(self.active_func.thickness, (0.1, 10))
-                opacity.set_value(self.active_func.opacity, (0, 1))
-                dash_spacing.set_value(self.active_func.dash_spacing, (0, 10))
-                show_surface_checkbox.setChecked(self.active_func.show_surface)
-                show_lines_checkbox.setChecked(self.active_func.show_lines)
-                if (
-                    self.active_func.type == "implicit"
-                    or self.active_func.type == "point"
-                ):
-                    x_label.setVisible(True)
-                    x_min.setVisible(True)
-                    x_max.setVisible(True)
-                    y_label.setVisible(True)
-                    y_min.setVisible(True)
-                    y_max.setVisible(True)
-                    z_label.setVisible(True)
-                    z_min.setVisible(True)
-                    z_max.setVisible(True)
-                    t_range_slider.setVisible(False)
-                    u_range_slider.setVisible(False)
-                    v_range_slider.setVisible(False)
-                    trace_spacing_slider.setVisible(True)
-                    dash_spacing.setVisible(False)
-                elif self.active_func.type == "parametric-1":
-                    x_label.setVisible(False)
-                    x_min.setVisible(False)
-                    x_max.setVisible(False)
-                    y_label.setVisible(False)
-                    y_min.setVisible(False)
-                    y_max.setVisible(False)
-                    z_label.setVisible(False)
-                    z_min.setVisible(False)
-                    z_max.setVisible(False)
-                    t_range_slider.setVisible(True)
-                    u_range_slider.setVisible(False)
-                    v_range_slider.setVisible(False)
-                    trace_spacing_slider.setVisible(False)
-                    dash_spacing.setVisible(True)
-                elif self.active_func.type == "parametric-2":
-                    x_label.setVisible(False)
-                    x_min.setVisible(False)
-                    x_max.setVisible(False)
-                    y_label.setVisible(False)
-                    y_min.setVisible(False)
-                    y_max.setVisible(False)
-                    z_label.setVisible(False)
-                    z_min.setVisible(False)
-                    z_max.setVisible(False)
-                    t_range_slider.setVisible(False)
-                    u_range_slider.setVisible(True)
-                    v_range_slider.setVisible(True)
-                    trace_spacing_slider.setVisible(True)
-                    dash_spacing.setVisible(False)
-
-        func_dropdown = self.control_widget.add_dropdown(
-            "Active function", self.func_names, update_active_func
+        self.func_dropdown = self.control_widget.add_dropdown(
+            "Active function", self.func_names, self.update_active_func
         )
 
-        def update_slider(coeff):
-            return lambda val, bounds: (
-                self.coeffs.update({coeff: val}),
-                self.update_functions(coeff),
-            )
-
-        def update_coeff_sliders(self):
-            new_coeff_dict = dict()
-            missing_sliders = set()
-            for func in self.functions:
-                for coeff in func.coeffs:
-                    if coeff in self.coeffs:
-                        new_coeff_dict[coeff] = self.coeffs[coeff]
-                    else:
-                        new_coeff_dict[coeff] = 1
-                        missing_sliders.add(coeff)
-            for coeff in self.coeffs:
-                if coeff not in new_coeff_dict:
-                    self.control_widget.remove_slider_by_label(coeff.name)
-            self.coeffs = new_coeff_dict
-            for coeff in list(missing_sliders):
-                self.control_widget.add_slider(
-                    DEFAULT_SLIDER_BOUNDS,
-                    1,
-                    coeff.name,
-                    update_slider(coeff),
-                )
-
-        def handle_function_input(text):
-            self.func_names = []
-            self.active_func = None
-            new_functions = []
-
-            # Parse the input text and create a Func object for each function
-            for func_text in text.split("\n"):
-                func = Func(func_text.strip())
-                if func.legal and func not in new_functions:
-                    self.func_names.append(func.str)
-                    if func in self.functions:
-                        new_functions.append(self.functions[self.functions.index(func)])
-                    else:
-                        new_functions.append(func)
-
-            # Remove actors for functions that are no longer present
-            for func in self.functions:
-                if func not in new_functions:
-                    if func.surface_actor:
-                        self.renderer.RemoveActor(func.surface_actor)
-                    if func.lines_actor:
-                        self.renderer.RemoveActor(func.lines_actor)
-            self.vtk_widget.get_render_window().Render()
-
-            # Update the functions list and coefficient sliders
-            self.functions = new_functions
-            update_coeff_sliders(self)
-
-            # Update the dropdown with the new function names
-            self.control_widget.update_dropdown(func_dropdown, self.func_names)
-
-            # Update the render for each function
-            for func in self.functions:
-                func.update_render(self)
-
-        self.control_widget.add_textbox("Functions input:", handle_function_input)
+        self.control_widget.add_textbox("Functions input:", self.handle_function_input)
 
         self.control_widget.add_label("Global settings:")
 
@@ -479,6 +254,227 @@ class PlotFunc(QWidget):
             func.update_render(self)
 
         self.vtk_widget.get_render_window().Render()
+
+    def update_x_range(self, val):
+        if self.active_func:
+            self.active_func.x_min = val[0]
+            self.active_func.x_max = val[1]
+            self.active_func.update_render(self)
+
+    def update_y_range(self, val):
+        if self.active_func:
+            self.active_func.y_min = val[0]
+            self.active_func.y_max = val[1]
+            self.active_func.update_render(self)
+
+    def update_z_range(self, val):
+        if self.active_func:
+            self.active_func.z_min = val[0]
+            self.active_func.z_max = val[1]
+            self.active_func.update_render(self)
+
+    def update_t_range(self, values, bounds):
+        if self.active_func:
+            self.active_func.t_range = values
+            self.active_func.t_bounds = bounds
+            self.active_func.update_render(self)
+
+    def update_u_range(self, values, bounds):
+        if self.active_func:
+            self.active_func.u_range = values
+            self.active_func.u_bounds = bounds
+            self.active_func.update_render(self)
+
+    def update_v_range(self, values, bounds):
+        if self.active_func:
+            self.active_func.v_range = values
+            self.active_func.v_bounds = bounds
+            self.active_func.update_render(self)
+
+    def update_color_start(self, color):
+        if self.active_func:
+            self.active_func.color_start = color
+            self.active_func.update_render(self)
+
+    def update_color_end(self, color):
+        if self.active_func:
+            self.active_func.color_end = color
+            self.active_func.update_render(self)
+
+    def update_line_color(self, color):
+        if self.active_func:
+            self.active_func.line_color = color
+            self.active_func.update_render(self)
+
+    def update_trace_spacing(self, val, bounds):
+        if self.active_func:
+            self.active_func.trace_spacing = val
+            self.active_func.trace_spacing_bounds = bounds
+            self.active_func.update_render(self)
+
+    def update_line_thickness(self, val, bounds):
+        if self.active_func:
+            self.active_func.thickness = val
+            self.active_func.thickness_bounds = bounds
+            self.active_func.update_render(self)
+
+    def update_opacity(self, val, bounds):
+        if self.active_func:
+            self.active_func.opacity = val
+            self.active_func.update_render(self)
+
+    def update_dash_spacing(self, val, bounds):
+        if self.active_func:
+            self.active_func.dash_spacing = val
+            self.active_func.dash_spacing_bounds = bounds
+            self.active_func.update_render(self)
+
+    def set_show_surface(self, state):
+        if self.active_func:
+            self.active_func.show_surface = state
+            self.active_func.update_render(self)
+            if self.active_func.surface_actor:
+                self.active_func.surface_actor.SetVisibility(state)
+            self.vtk_widget.get_render_window().Render()
+
+    def set_show_lines(self, state):
+        if self.active_func:
+            self.active_func.show_lines = state
+            self.active_func.update_render(self)
+            if self.active_func.lines_actor:
+                self.active_func.lines_actor.SetVisibility(state)
+            self.vtk_widget.get_render_window().Render()
+
+    def update_active_func(self, idx):
+        if idx != -1 and len(self.functions) > idx:
+            self.active_func = self.functions[idx]
+            self.x_min.setText(str(self.active_func.x_min))
+            self.x_max.setText(str(self.active_func.x_max))
+            self.y_min.setText(str(self.active_func.y_min))
+            self.y_max.setText(str(self.active_func.y_max))
+            self.z_min.setText(str(self.active_func.z_min))
+            self.z_max.setText(str(self.active_func.z_max))
+            self.trace_spacing_slider.set_value(
+                self.active_func.trace_spacing,
+                self.active_func.trace_spacing_bounds,
+            )
+            self.surface_colors.set_colors(
+                (self.active_func.color_start, self.active_func.color_end),
+            )
+            self.line_color.set_colors(self.active_func.line_color)
+            self.line_thickness.set_value(self.active_func.thickness, (0.1, 10))
+            self.opacity.set_value(self.active_func.opacity, (0, 1))
+            self.dash_spacing.set_value(self.active_func.dash_spacing, (0, 10))
+            self.show_surface_checkbox.setChecked(self.active_func.show_surface)
+            self.show_lines_checkbox.setChecked(self.active_func.show_lines)
+            if self.active_func.type == "implicit" or self.active_func.type == "point":
+                self.x_label.setVisible(True)
+                self.x_min.setVisible(True)
+                self.x_max.setVisible(True)
+                self.y_label.setVisible(True)
+                self.y_min.setVisible(True)
+                self.y_max.setVisible(True)
+                self.z_label.setVisible(True)
+                self.z_min.setVisible(True)
+                self.z_max.setVisible(True)
+                self.t_range_slider.setVisible(False)
+                self.u_range_slider.setVisible(False)
+                self.v_range_slider.setVisible(False)
+                self.trace_spacing_slider.setVisible(True)
+                self.dash_spacing.setVisible(False)
+            elif self.active_func.type == "parametric-1":
+                self.x_label.setVisible(False)
+                self.x_min.setVisible(False)
+                self.x_max.setVisible(False)
+                self.y_label.setVisible(False)
+                self.y_min.setVisible(False)
+                self.y_max.setVisible(False)
+                self.z_label.setVisible(False)
+                self.z_min.setVisible(False)
+                self.z_max.setVisible(False)
+                self.t_range_slider.setVisible(True)
+                self.u_range_slider.setVisible(False)
+                self.v_range_slider.setVisible(False)
+                self.trace_spacing_slider.setVisible(False)
+                self.dash_spacing.setVisible(True)
+            elif self.active_func.type == "parametric-2":
+                self.x_label.setVisible(False)
+                self.x_min.setVisible(False)
+                self.x_max.setVisible(False)
+                self.y_label.setVisible(False)
+                self.y_min.setVisible(False)
+                self.y_max.setVisible(False)
+                self.z_label.setVisible(False)
+                self.z_min.setVisible(False)
+                self.z_max.setVisible(False)
+                self.t_range_slider.setVisible(False)
+                self.u_range_slider.setVisible(True)
+                self.v_range_slider.setVisible(True)
+                self.trace_spacing_slider.setVisible(True)
+                self.dash_spacing.setVisible(False)
+
+    def update_slider(self, coeff):
+        return lambda val, bounds: (
+            self.coeffs.update({coeff: val}),
+            self.update_functions(coeff),
+        )
+
+    def update_coeff_sliders(self):
+        new_coeff_dict = dict()
+        missing_sliders = set()
+        for func in self.functions:
+            for coeff in func.coeffs:
+                if coeff in self.coeffs:
+                    new_coeff_dict[coeff] = self.coeffs[coeff]
+                else:
+                    new_coeff_dict[coeff] = 1
+                    missing_sliders.add(coeff)
+        for coeff in self.coeffs:
+            if coeff not in new_coeff_dict:
+                self.control_widget.remove_slider_by_label(coeff.name)
+        self.coeffs = new_coeff_dict
+        for coeff in list(missing_sliders):
+            self.control_widget.add_slider(
+                DEFAULT_SLIDER_BOUNDS,
+                1,
+                coeff.name,
+                self.update_slider(coeff),
+            )
+
+    def handle_function_input(self, text):
+        self.func_names = []
+        self.active_func = None
+        new_functions = []
+
+        # Parse the input text and create a Func object for each function
+        for func_text in text.split("\n"):
+            func = Func(func_text.strip())
+            if func.legal and func not in new_functions:
+                self.func_names.append(func.str)
+                if func in self.functions:
+                    new_functions.append(self.functions[self.functions.index(func)])
+                else:
+                    new_functions.append(func)
+
+        # Remove actors for functions that are no longer present
+        for func in self.functions:
+            if func not in new_functions:
+                if func.surface_actor:
+                    self.renderer.RemoveActor(func.surface_actor)
+                if func.lines_actor:
+                    self.renderer.RemoveActor(func.lines_actor)
+        self.vtk_widget.get_render_window().Render()
+
+        # Update the functions list and coefficient sliders
+        self.functions = new_functions
+        self.update_coeff_sliders()
+
+        # Update the dropdown with the new function names
+        self.control_widget.update_dropdown(self.func_dropdown, self.func_names)
+
+        # Update the render for each function
+        for func in self.functions:
+            func.update_render(self)
 
 
 if __name__ == "__main__":

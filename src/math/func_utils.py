@@ -289,3 +289,65 @@ class Func:
 
     def __str__(self):
         return self.str
+
+    def marshalize(self):
+        return {
+            "text": self.text,
+            "x_min": self.x_min,
+            "x_max": self.x_max,
+            "y_min": self.y_min,
+            "y_max": self.y_max,
+            "z_min": self.z_min,
+            "z_max": self.z_max,
+            "t_range": self.t_range,
+            "u_range": self.u_range,
+            "v_range": self.v_range,
+            "t_range_bounds": self.t_range_bounds,
+            "u_range_bounds": self.u_range_bounds,
+            "v_range_bounds": self.v_range_bounds,
+            "trace_spacing": self.trace_spacing,
+            "trace_spacing_bounds": self.trace_spacing_bounds,
+            "thickness": self.thickness,
+            "thickness_bounds": self.thickness_bounds,
+            "dash_spacing": self.dash_spacing,
+            "dash_spacing_bounds": self.dash_spacing_bounds,
+            "opacity": self.opacity,
+            "color_start": self.color_start,
+            "color_end": self.color_end,
+            "line_color": self.line_color,
+            "legal": self.legal,
+            "type": self.type,
+            "show_surface": self.show_surface,
+            "show_lines": self.show_lines,
+        }
+    
+    def unmarshalize(self, data):
+        self.text = data["text"]
+        self.x_min = data["x_min"]
+        self.x_max = data["x_max"]
+        self.y_min = data["y_min"]
+        self.y_max = data["y_max"]
+        self.z_min = data["z_min"]
+        self.z_max = data["z_max"]
+        self.t_range = data["t_range"]
+        self.u_range = data["u_range"]
+        self.v_range = data["v_range"]
+        self.t_range_bounds = data["t_range_bounds"]
+        self.u_range_bounds = data["u_range_bounds"]
+        self.v_range_bounds = data["v_range_bounds"]
+        self.trace_spacing = data["trace_spacing"]
+        self.trace_spacing_bounds = data["trace_spacing_bounds"]
+        self.thickness = data["thickness"]
+        self.thickness_bounds = data["thickness_bounds"]
+        self.dash_spacing = data["dash_spacing"]
+        self.dash_spacing_bounds = data["dash_spacing_bounds"]
+        self.opacity = data["opacity"]
+        self.color_start = data["color_start"]
+        self.color_end = data["color_end"]
+        self.line_color = data["line_color"]
+        self.legal = data["legal"]
+        self.type = data["type"]
+        self.show_surface = data["show_surface"]
+        self.show_lines = data["show_lines"]
+        self.parse_function()
+        return self 
