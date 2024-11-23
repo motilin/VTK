@@ -230,8 +230,7 @@ class PlotFunc(QWidget):
         def set_show_surface(state):
             if self.active_func:
                 self.active_func.show_surface = state
-                if not self.active_func.surface_actor:
-                    self.active_func.update_render(self)
+                self.active_func.update_render(self)
                 if self.active_func.surface_actor:
                     self.active_func.surface_actor.SetVisibility(state)
                 self.vtk_widget.get_render_window().Render()
@@ -245,8 +244,7 @@ class PlotFunc(QWidget):
         def set_show_lines(state):
             if self.active_func:
                 self.active_func.show_lines = state
-                if not self.active_func.lines_actor:
-                    self.active_func.update_render(self)
+                self.active_func.update_render(self)
                 if self.active_func.lines_actor:
                     self.active_func.lines_actor.SetVisibility(state)
                 self.vtk_widget.get_render_window().Render()
@@ -282,7 +280,7 @@ class PlotFunc(QWidget):
                 if (
                     self.active_func.type == "implicit"
                     or self.active_func.type == "point"
-                ):  
+                ):
                     x_label.setVisible(True)
                     x_min.setVisible(True)
                     x_max.setVisible(True)
@@ -295,6 +293,8 @@ class PlotFunc(QWidget):
                     t_range_slider.setVisible(False)
                     u_range_slider.setVisible(False)
                     v_range_slider.setVisible(False)
+                    trace_spacing_slider.setVisible(True)
+                    dash_spacing.setVisible(False)
                 elif self.active_func.type == "parametric-1":
                     x_label.setVisible(False)
                     x_min.setVisible(False)
@@ -308,6 +308,8 @@ class PlotFunc(QWidget):
                     t_range_slider.setVisible(True)
                     u_range_slider.setVisible(False)
                     v_range_slider.setVisible(False)
+                    trace_spacing_slider.setVisible(False)
+                    dash_spacing.setVisible(True)
                 elif self.active_func.type == "parametric-2":
                     x_label.setVisible(False)
                     x_min.setVisible(False)
@@ -321,6 +323,8 @@ class PlotFunc(QWidget):
                     t_range_slider.setVisible(False)
                     u_range_slider.setVisible(True)
                     v_range_slider.setVisible(True)
+                    trace_spacing_slider.setVisible(True)
+                    dash_spacing.setVisible(False)
 
         func_dropdown = self.control_widget.add_dropdown(
             "Active function", self.func_names, update_active_func

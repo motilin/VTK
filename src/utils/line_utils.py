@@ -371,3 +371,207 @@ def create_parametric_curve_actor(
     return actor
 
 
+def calculate_adaptive_resolution(param_range, trace_spacing):
+    """
+    Calculates appropriate resolution based on parameter range and trace spacing.
+
+    Parameters:
+    -----------
+    param_range : tuple
+        Range of parameter (min, max)
+    trace_spacing : float
+        Spacing between traces
+
+    Returns:
+        int: Adaptive resolution value
+    """
+    range_size = param_range[1] - param_range[0]
+    # Base resolution on range size and spacing, with minimum and maximum limits
+    base_resolution = int(range_size / trace_spacing * 5)  # 5 points per trace spacing
+    return max(50, min(500, base_resolution))  # Clamp between 50 and 500 points
+
+
+def create_parametric_curve_points(
+    parametric_function, fixed_param, is_u_curve, u_range, v_range, trace_spacing
+):
+    """
+    Creates points for a parametric curve at constant u or v with adaptive resolution.
+
+    Parameters:
+    -----------
+    parametric_function : callable
+        Function that takes (u,v) arrays and returns (x,y,z) arrays
+    fixed_param : float
+        The fixed value of u or v
+    is_u_curve : bool
+        True if creating curve with constant u, False for constant v
+    u_range : tuple
+        Range of u parameter (u_min, u_max)
+    v_range : tuple
+        Range of v parameter (v_min, v_max)
+    trace_spacing : float
+        Spacing between traces (used for resolution calculation)
+
+    Returns:
+        numpy array of 3D points
+    """
+    if is_u_curve:
+        resolution = calculate_adaptive_resolution(v_range, trace_spacing)
+        u = np.full(resolution, fixed_param)
+        v = np.linspace(v_range[0], v_range[1], resolution)
+    else:
+        resolution = calculate_adaptive_resolution(u_range, trace_spacing)
+        u = np.linspace(u_range[0], u_range[1], resolution)
+        v = np.full(resolution, fixed_param)
+
+    x, y, z = parametric_function(u, v)
+    return np.column_stack([x, y, z])
+
+
+def create_curve_polydata_with_clipping(points, global_bounds):
+    """
+    Creates VTK polydata for a curve with proper clipping to global bounds.
+
+    Parameters:
+    -----------
+    points : numpy array
+        Array of 3D points
+    global_bounds : tuple
+        (xmin, xmax, ymin, ymax, zmin, zmax)
+
+    Returns:
+        vtkPolyData object or None if no valid segments
+    """
+    if len(points) < 2:
+        return None
+
+    # Check which points are within bounds
+    in_bounds = np.all(
+        [
+            (points[:, 0] >= global_bounds[0]) & (points[:, 0] <= global_bounds[1]),
+            (points[:, 1] >= global_bounds[2]) & (points[:, 1] <= global_bounds[3]),
+            (points[:, 2] >= global_bounds[4]) & (points[:, 2] <= global_bounds[5]),
+        ],
+        axis=0,
+    )
+
+    # Find segments where at least one point is in bounds
+    valid_segments = []
+    for i in range(len(points) - 1):
+        p1_in = in_bounds[i]
+        p2_in = in_bounds[i + 1]
+
+        if p1_in or p2_in:
+            p1 = points[i]
+            p2 = points[i + 1]
+
+            # If both points are in bounds, add segment as is
+            if p1_in and p2_in:
+                valid_segments.append((p1, p2))
+            # If only one point is in bounds, clip the segment
+            else:
+                t_values = []
+                for dim in range(3):
+                    dim_min = global_bounds[2 * dim]
+                    dim_max = global_bounds[2 * dim + 1]
+
+                    if p2[dim] != p1[dim]:
+                        t1 = (dim_min - p1[dim]) / (p2[dim] - p1[dim])
+                        t2 = (dim_max - p1[dim]) / (p2[dim] - p1[dim])
+                        t_values.extend([t for t in [t1, t2] if 0 <= t <= 1])
+
+                if t_values:
+                    t_values = [
+                        0 if p1_in else min(t_values),
+                        1 if p2_in else max(t_values),
+                    ]
+                    clipped_p1 = p1 + t_values[0] * (p2 - p1)
+                    clipped_p2 = p1 + t_values[1] * (p2 - p1)
+                    valid_segments.append((clipped_p1, clipped_p2))
+
+    if not valid_segments:
+        return None
+
+    # Create polydata from valid segments
+    polydata = vtk.vtkPolyData()
+    vtk_points = vtk.vtkPoints()
+    lines = vtk.vtkCellArray()
+
+    point_id = 0
+    for p1, p2 in valid_segments:
+        vtk_points.InsertNextPoint(p1)
+        vtk_points.InsertNextPoint(p2)
+
+        line = vtk.vtkLine()
+        line.GetPointIds().SetId(0, point_id)
+        line.GetPointIds().SetId(1, point_id + 1)
+        lines.InsertNextCell(line)
+        point_id += 2
+
+    polydata.SetPoints(vtk_points)
+    polydata.SetLines(lines)
+    return polydata
+
+
+def create_parametric_surface_traces_actor(
+    parametric_function,
+    u_range=(0, 1),
+    v_range=(0, 1),
+    global_bounds=(-10, 10, -10, 10, -10, 10),
+    trace_spacing=0.1,
+    color=vtk.vtkNamedColors().GetColor3d("charcoal"),
+    thickness=2,
+    opacity=1.0,
+):
+    """
+    Creates a VTK actor for parametric surface traces. The traces are created by
+    evaluating the parametric function at different u and v values with trace_spacing
+    between them. The result is a wireframe representation of the surface. The resultant
+    traces curve is clipped to the global_bounds given in x,y,z coordinates. The function
+    returns a VTK actor for the traces that can be added to the renderer.
+    """
+    append_filter = vtk.vtkAppendPolyData()
+
+    # Create u-constant curves
+    u_values = np.arange(u_range[0], u_range[1] + trace_spacing, trace_spacing)
+    for u in u_values:
+        points = create_parametric_curve_points(
+            parametric_function, u, True, u_range, v_range, trace_spacing
+        )
+        curve_data = create_curve_polydata_with_clipping(points, global_bounds)
+        if curve_data:
+            append_filter.AddInputData(curve_data)
+
+    # Create v-constant curves
+    v_values = np.arange(v_range[0], v_range[1] + trace_spacing, trace_spacing)
+    for v in v_values:
+        points = create_parametric_curve_points(
+            parametric_function, v, False, u_range, v_range, trace_spacing
+        )
+        curve_data = create_curve_polydata_with_clipping(points, global_bounds)
+        if curve_data:
+            append_filter.AddInputData(curve_data)
+
+    append_filter.Update()
+
+    # Create mapper and actor
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(append_filter.GetOutputPort())
+    mapper.ScalarVisibilityOff()
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    # Set up properties
+    properties = actor.GetProperty()
+    properties.SetColor(color)
+    properties.SetLineWidth(thickness)
+    properties.SetRepresentationToWireframe()
+    properties.LightingOff()
+    properties.SetAmbient(1.0)
+    properties.SetDiffuse(0.0)
+    properties.SetSpecular(0.0)
+    properties.SetOpacity(opacity)
+    properties.SetRenderLinesAsTubes(True)
+
+    return actor

@@ -39,6 +39,7 @@ from src.utils.surface_utils import (
 from src.utils.line_utils import (
     create_func_traces_actor,
     create_parametric_curve_actor,
+    create_parametric_surface_traces_actor,
 )
 import sympy as sp
 from sympy.parsing.sympy_parser import (
@@ -180,7 +181,7 @@ class Func:
         )
         x_max = (
             widget.global_x_max
-            if abs(widget.global_x_max) > abs(self.x_max)
+            if abs(widget.global_x_max) < abs(self.x_max)
             else self.x_max
         )
         y_min = (
@@ -190,7 +191,7 @@ class Func:
         )
         y_max = (
             widget.global_y_max
-            if abs(widget.global_y_max) > abs(self.y_max)
+            if abs(widget.global_y_max) < abs(self.y_max)
             else self.y_max
         )
         z_min = (
@@ -200,7 +201,7 @@ class Func:
         )
         z_max = (
             widget.global_z_max
-            if abs(widget.global_z_max) > abs(self.z_max)
+            if abs(widget.global_z_max) < abs(self.z_max)
             else self.z_max
         )
         return (x_min, x_max, y_min, y_max, z_min, z_max)
@@ -257,7 +258,16 @@ class Func:
                 self.dash_spacing,
             )
         elif self.type == "parametric-2":
-            pass
+            self.lines_actor = create_parametric_surface_traces_actor(
+                np_func,
+                self.u_range,
+                self.v_range,
+                global_bounds,
+                self.trace_spacing,
+                self.line_color,
+                self.thickness,
+                self.opacity,
+            )
         if self.lines_actor:
             renderer.AddActor(self.lines_actor)
 
