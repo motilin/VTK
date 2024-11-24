@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 from qt.main_window import VTKMainWindow
+from qt.camera import VTKCameraManager
 from src.core.interactor import set_mathematical_view
 from src.core.constants import (
     COLORS,
@@ -521,7 +522,7 @@ class PlotFunc(QWidget):
             "coeffs_bounds": {
                 str(coeff): self.coeffs_bounds[coeff] for coeff in self.coeffs
             },
-            "camera": self.renderer.GetActiveCamera().GetViewUp(),
+            "camera": VTKCameraManager.save_camera_state(self.renderer),
         }
 
     def unmarshalize(self, data):
@@ -559,8 +560,7 @@ class PlotFunc(QWidget):
             self.control_widget.update_slider_by_label(
                 coeff, self.coeffs[coeff_symbol], self.coeffs_bounds[coeff_symbol]
             )
-        self.renderer.GetActiveCamera().SetViewUp(data["camera"])
-
+        VTKCameraManager.load_camera_state(self.renderer, data["camera"])
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
