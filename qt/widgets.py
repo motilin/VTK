@@ -76,6 +76,14 @@ class ControlWidget(QWidget):
         self.layout.addWidget(slider)
         return slider
 
+    def update_slider_by_label(self, label_text, value, bounds):
+        for i in reversed(range(self.layout.count())):
+            item = self.layout.itemAt(i)
+            widget = item.widget()
+            if isinstance(widget, Slider):
+                if widget.label.text() == label_text:
+                    widget.set_value(value, bounds)
+
     def remove_slider_by_label(self, label_text):
         for i in reversed(range(self.layout.count())):
             item = self.layout.itemAt(i)

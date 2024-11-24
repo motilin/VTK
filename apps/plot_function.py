@@ -1,5 +1,5 @@
-import os
-import sys
+import os, sys
+import sympy as sp
 
 # Dynamically set PYTHONPATH in .env
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -56,6 +56,7 @@ class PlotFunc(QWidget):
         self.functions = []
         self.func_names = []
         self.coeffs = dict()
+        self.coeffs_bounds = dict()
         self.active_func = None
 
         # Initialize global bounds
@@ -168,7 +169,9 @@ class PlotFunc(QWidget):
             "Active function", self.func_names, self.update_active_func
         )
 
-        self.func_input_textbox = self.control_widget.add_textbox("Functions input:", self.handle_function_input)
+        self.func_input_textbox = self.control_widget.add_textbox(
+            "Functions input:", self.handle_function_input
+        )
 
         self.control_widget.add_label("Global settings:")
 
@@ -441,6 +444,7 @@ class PlotFunc(QWidget):
     def update_slider(self, coeff):
         return lambda val, bounds: (
             self.coeffs.update({coeff: val}),
+            self.coeffs_bounds.update({coeff: bounds}),
             self.update_functions(coeff),
         )
 
@@ -513,6 +517,11 @@ class PlotFunc(QWidget):
                 "z_min": self.global_z_min,
                 "z_max": self.global_z_max,
             },
+            "coeffs": {str(coeff): self.coeffs[coeff] for coeff in self.coeffs},
+            "coeffs_bounds": {
+                str(coeff): self.coeffs_bounds[coeff] for coeff in self.coeffs
+            },
+            "camera": self.renderer.GetActiveCamera().GetViewUp(),
         }
 
     def unmarshalize(self, data):
@@ -543,6 +552,14 @@ class PlotFunc(QWidget):
         self.update_active_func(0)
         for func in self.functions:
             func.update_render(self)
+        for coeff in data["coeffs"]:
+            coeff_symbol = sp.Symbol(coeff)
+            self.coeffs[coeff_symbol] = data["coeffs"][coeff]
+            self.coeffs_bounds[coeff_symbol] = data["coeffs_bounds"][coeff]
+            self.control_widget.update_slider_by_label(
+                coeff, self.coeffs[coeff_symbol], self.coeffs_bounds[coeff_symbol]
+            )
+        self.renderer.GetActiveCamera().SetViewUp(data["camera"])
 
 
 if __name__ == "__main__":
