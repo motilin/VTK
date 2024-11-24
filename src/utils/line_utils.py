@@ -167,6 +167,10 @@ def create_contour_polydata(points, values, resolution):
     grid = vtk.vtkStructuredGrid()
     grid.SetDimensions(resolution, resolution, 1)  # 2D grid
 
+    if points.size < grid.GetNumberOfPoints() or values.size < grid.GetNumberOfPoints():
+        print("Error: Insufficient points or values")
+        return None
+
     # Set the points
     vtk_points = vtk.vtkPoints()
     vtk_points.SetData(numpy_support.numpy_to_vtk(points, deep=True))
@@ -547,7 +551,7 @@ def create_curve_polydata_with_clipping(points, global_bounds):
 
 
 def create_parametric_surface_traces_actor(
-    parametric_function, # NumPy function (u,v) -> (x,y,z)
+    parametric_function,  # NumPy function (u,v) -> (x,y,z)
     u_range=(0, 1),
     v_range=(0, 1),
     global_bounds=(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX),
