@@ -9,7 +9,14 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QKeySequence, QIcon
-from src.core.interactor import export_to_obj, export_to_png, save_state, load_state
+from src.core.interactor import (
+    export_to_obj,
+    export_to_png,
+    save_state,
+    load_state,
+    export_to_obj,
+    export_to_html,
+)
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -80,8 +87,9 @@ class CommandPalette(QDialog):
         self.commands = [
             {"text": "Load File", "action": self.load_file},
             {"text": "Save File", "action": self.save_file},
-            {"text": "Export PNG", "action": self.export_as_png},
-            {"text": "Export OBJ", "action": self.export_as_obj},
+            {"text": "Export As PNG", "action": self.export_as_png},
+            {"text": "Export As OBJ", "action": self.export_as_obj},
+            # {"text": "Export As HTML", "action": self.export_as_html},
         ]
 
         for cmd in self.commands:
@@ -127,6 +135,16 @@ class CommandPalette(QDialog):
         if file_path:
             self.export_obj(file_path)
 
+    def export_as_html(self):
+        vtk_widget = self.parent.widget.vtk_widget
+        file_path, _ = QFileDialog.getSaveFileName(
+            vtk_widget, "Export HTML", "", "HTML Files (*.html)"
+        )
+        if file_path:
+            if not file_path.endswith(".html"):
+                file_path += ".html"
+            self.export_html(file_path)
+
     def showEvent(self, event):
         # Center the palette relative to the parent window
         if self.parent:
@@ -165,3 +183,6 @@ class CommandPalette(QDialog):
 
     def export_obj(self, filepath):
         export_to_obj(self.parent.widget.vtk_widget, filepath)
+        
+    def export_html(self, filepath):
+        export_to_html(self.parent.widget.vtk_widget, filepath)

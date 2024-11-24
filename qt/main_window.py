@@ -2,9 +2,15 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QShortcut
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtCore import Qt
 import sys
-from src.core.interactor import set_mathematical_view, export_to_obj, export_to_png
+from src.core.interactor import (
+    set_mathematical_view,
+    export_to_obj,
+    export_to_png,
+    export_to_html,
+)
 from src.core.constants import WINDOW_WIDTH, WINDOW_HEIGHT
 from qt.command_palette import CommandPalette
+
 
 class VTKMainWindow(QMainWindow):
     def __init__(self, widget):
@@ -39,15 +45,14 @@ class VTKMainWindow(QMainWindow):
 
         # export_png_shortcut = QShortcut(QKeySequence(Qt.Key_P), self)
         # export_png_shortcut.activated.connect(self.export_png)
-       
-        # use the / key to focus the input box 
+
+        # use the / key to focus the input box
         input_box_focus_shortcut = QShortcut(QKeySequence(Qt.Key_Slash), self)
         input_box_focus_shortcut.activated.connect(self.focus_input_box)
-       
-        # use the Ctrl+Shift+P shortcut to show the command palette 
+
+        # use the Ctrl+Shift+P shortcut to show the command palette
         palette_shortcut = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
         palette_shortcut.activated.connect(self.show_command_palette)
-
 
     def close_application(self):
         self.close()
@@ -62,19 +67,21 @@ class VTKMainWindow(QMainWindow):
 
     def export_png(self, filename):
         export_to_png(self.widget.vtk_widget, "output")
-        
+
+    def export_html(self, filename):
+        export_to_html(self.widget.vtk_widget, "output")
+
     def focus_input_box(self):
         self.widget.control_widget.input_box.setFocus()
         self.widget.control_widget.input_box.selectAll()
         self.widget.control_widget.input_box.setFocus()
-        
+
     def save_state(self, filename):
         pass
-    
+
     def load_state(self, filename):
         pass
-    
-    
+
     def show_command_palette(self):
         palette = CommandPalette(self)
         palette.exec_()

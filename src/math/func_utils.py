@@ -174,6 +174,16 @@ class Func:
         widget.vtk_widget.get_render_window().Render()
 
     def get_bounds(self, widget):
+        if self.type == "parametric-1" or self.type == "parametric-2":
+            return (
+                widget.global_x_min,
+                widget.global_x_max,
+                widget.global_y_min,
+                widget.global_y_max,
+                widget.global_z_min,
+                widget.global_z_max,
+            )
+
         x_min = (
             widget.global_x_min
             if abs(widget.global_x_min) < abs(self.x_min)
