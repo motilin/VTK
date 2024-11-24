@@ -218,7 +218,7 @@ def create_func_traces_actor(
     Returns:
         vtkActor object
     """
-    if space == 0:
+    if space == 0 or thickness == 0 or opacity == 0:
         return None
     space = abs(space)
 
@@ -279,6 +279,8 @@ def create_parametric_curve_actor(
     dash_spacing=0.0,  # Dash spacing (0 = solid line)
     global_bounds=(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX),
 ):
+    if thickness == 0 or opacity == 0:
+        return None
     tube_radius = thickness / 40
     # Dynamic resolution calculation
     t_span = abs(t_range[1] - t_range[0])
@@ -545,7 +547,7 @@ def create_curve_polydata_with_clipping(points, global_bounds):
 
 
 def create_parametric_surface_traces_actor(
-    parametric_function,
+    parametric_function, # NumPy function (u,v) -> (x,y,z)
     u_range=(0, 1),
     v_range=(0, 1),
     global_bounds=(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX),
@@ -561,7 +563,7 @@ def create_parametric_surface_traces_actor(
     traces curve is clipped to the global_bounds given in x,y,z coordinates. The function
     returns a VTK actor for the traces that can be added to the renderer.
     """
-    if trace_spacing == 0:
+    if trace_spacing == 0 or thickness == 0 or opacity == 0:
         return None
     trace_spacing = abs(trace_spacing)
 
