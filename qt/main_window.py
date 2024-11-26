@@ -82,6 +82,22 @@ class VTKMainWindow(QMainWindow):
     def load_state(self, filename):
         pass
 
-    def show_command_palette(self):
+    def show_command_palette2(self):
         palette = CommandPalette(self)
         palette.exec_()
+
+    def show_command_palette(self):
+        vtk_widget = self.widget.vtk_widget
+        interactor = vtk_widget.get_render_window().GetInteractor()
+
+        # Disable VTK interactor to avoid conflicts
+        if interactor:
+            interactor.Disable()
+
+        # Create and show the CommandPalette
+        if not hasattr(self, "command_palette"):
+            self.command_palette = CommandPalette(self)
+
+        # Connect palette close event to re-enable interactor
+        self.command_palette.finished.connect(interactor.Enable)
+        self.command_palette.show()
