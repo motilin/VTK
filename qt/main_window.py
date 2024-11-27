@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QShortcut
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtCore import Qt
-import sys
+import sys, logging, vtk
 from src.core.interactor import (
     set_mathematical_view,
     export_to_obj,
@@ -27,6 +27,16 @@ class VTKMainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
         layout.addWidget(self.widget)
+
+        if (
+            not hasattr(self.widget.vtk_widget, "renderer")
+            or not self.widget.vtk_widget.renderer
+        ):
+            logging.warning("No renderer found, initializing a new one")
+            self.widget.vtk_widget.renderer = vtk.vtkRenderer()
+            self.widget.vtk_widget.get_render_window().AddRenderer(
+                self.widget.vtk_widget.renderer
+            )
 
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
         self.show()
@@ -59,8 +69,11 @@ class VTKMainWindow(QMainWindow):
         sys.exit()
 
     def reset_mathematical_view(self):
-        set_mathematical_view(self.widget.renderer)
-        self.widget.vtk_widget.get_render_window().Render()
+        if hasattr(self.widget.vtk_widget, "renderer") and self.widget.vtk_widget.renderer:
+            set_mathematical_view(self.widget.vtk_widget.renderer)
+            self.widget.vtk_widget.get_render_window().Render()
+        else:
+            logging.warning("No renderer found, cannot reset view")
 
     def export_obj(self, filename):
         export_to_obj(self.widget.vtk_widget, "output")
@@ -82,22 +95,6 @@ class VTKMainWindow(QMainWindow):
     def load_state(self, filename):
         pass
 
-    def show_command_palette2(self):
+    def show_command_palette(self):
         palette = CommandPalette(self)
         palette.exec_()
-
-    def show_command_palette(self):
-        vtk_widget = self.widget.vtk_widget
-        interactor = vtk_widget.get_render_window().GetInteractor()
-
-        # Disable VTK interactor to avoid conflicts
-        if interactor:
-            interactor.Disable()
-
-        # Create and show the CommandPalette
-        if not hasattr(self, "command_palette"):
-            self.command_palette = CommandPalette(self)
-
-        # Connect palette close event to re-enable interactor
-        self.command_palette.finished.connect(interactor.Enable)
-        self.command_palette.show()

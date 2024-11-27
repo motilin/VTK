@@ -24,12 +24,12 @@ class CustomInteractorStyle(vtk.vtkInteractorStyleTrackballCamera):
 
     def on_key_press_event(self, obj, event):
         key = self.GetInteractor().GetKeySym()
-        if key == "q":
-            self.GetInteractor().GetRenderWindow().Finalize()
-            self.GetInteractor().TerminateApp()
-            sys.exit(0)
-        if key == "r":
-            set_mathematical_view(self.widget.renderer)
+        # if key == "q":
+        #     self.GetInteractor().GetRenderWindow().Finalize()
+        #     self.GetInteractor().TerminateApp()
+        #     sys.exit(0)
+        # if key == "r":
+        #     set_mathematical_view(self.widget.renderer)
         # if key == "o":
         #     export_to_obj(self.widget, "output")
         # if key == "p":
