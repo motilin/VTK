@@ -165,10 +165,14 @@ def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1), opacity=1
         t = (z - z_min) / z_range
 
         # Interpolate colors
-        r = int((color1[0] * (1 - t) + color2[0] * t) * 255)
-        g = int((color1[1] * (1 - t) + color2[1] * t) * 255)
-        b = int((color1[2] * (1 - t) + color2[2] * t) * 255)
-        a = int(opacity * 255)
+        try:
+            r = int((color1[0] * (1 - t) + color2[0] * t) * 255)
+            g = int((color1[1] * (1 - t) + color2[1] * t) * 255)
+            b = int((color1[2] * (1 - t) + color2[2] * t) * 255)
+            a = int(opacity * 255)
+        except Exception as e:
+            print(f"Error in color interpolation: {e}")
+            continue
 
         colors.InsertNextTuple4(r, g, b, a)
 
