@@ -172,6 +172,8 @@ def set_z_gradient_coloring(actor, color1=(1, 0, 0), color2=(0, 0, 1), opacity=1
             a = int(opacity * 255)
         except Exception as e:
             print(f"Error in color interpolation: {e}")
+            # color.InsertNextTuple4 a transparent color
+            colors.InsertNextTuple4(0, 0, 0, 0)
             continue
 
         colors.InsertNextTuple4(r, g, b, a)
