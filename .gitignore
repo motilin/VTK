@@ -13,3 +13,42 @@ Dockerfile
 *.gif
 *.ico
 *.svg
+
+# compiled python files
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+env/
+.env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Python egg files
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# PyInstaller
+/dist/
+/build/
+*.spec
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak

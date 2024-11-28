@@ -232,6 +232,7 @@ def create_parametric_func_surface_actor(
                 U, V = np.meshgrid([other_mid], [pi])
 
             X, Y, Z = func(U, V)
+            X, Y, Z = np.atleast_1d(X), np.atleast_1d(Y), np.atleast_1d(Z)
             test_vals_x[i] = X.flatten()[0]
             test_vals_y[i] = Y.flatten()[0]
             test_vals_z[i] = Z.flatten()[0]
@@ -271,9 +272,16 @@ def create_parametric_func_surface_actor(
     # Evaluate the parametric function
     try:
         X, Y, Z = parametric_function(U, V)
+        X, Y, Z = np.atleast_2d(X), np.atleast_2d(Y), np.atleast_2d(Z)
     except Exception as e:
         print(f"Error in parametric function evaluation: {e}")
         return vtk.vtkActor()
+
+    # Broadcast arrays to the same shape
+    target_shape = (u_samples, v_samples)
+    X = np.broadcast_to(X, target_shape)
+    Y = np.broadcast_to(Y, target_shape)
+    Z = np.broadcast_to(Z, target_shape)
 
     # Validate output
     if not (X.shape == Y.shape == Z.shape == U.shape):

@@ -433,6 +433,39 @@ def create_parametric_curve_points(
 ):
     """
     Creates points for a parametric curve at constant u or v with adaptive resolution.
+    Handles parametric functions that may return scalars or arrays.
+    """
+    if is_u_curve:
+        resolution = calculate_adaptive_resolution(v_range, trace_spacing)
+        u = np.full(resolution, fixed_param)
+        v = np.linspace(v_range[0], v_range[1], resolution)
+    else:
+        resolution = calculate_adaptive_resolution(u_range, trace_spacing)
+        u = np.linspace(u_range[0], u_range[1], resolution)
+        v = np.full(resolution, fixed_param)
+
+    # Call the parametric function
+    x, y, z = parametric_function(u, v)
+
+    # Convert scalar outputs to constant arrays if needed
+    x = np.full(resolution, x) if np.isscalar(x) else x
+    y = np.full(resolution, y) if np.isscalar(y) else y
+    z = np.full(resolution, z) if np.isscalar(z) else z
+
+    # Ensure all arrays have the same length
+    if not (len(x) == len(y) == len(z)):
+        raise ValueError(
+            f"Inconsistent array lengths: x={len(x)}, y={len(y)}, z={len(z)}"
+        )
+
+    return np.column_stack([x, y, z])
+
+
+def create_parametric_curve_points2(
+    parametric_function, fixed_param, is_u_curve, u_range, v_range, trace_spacing
+):
+    """
+    Creates points for a parametric curve at constant u or v with adaptive resolution.
 
     Parameters:
     -----------
