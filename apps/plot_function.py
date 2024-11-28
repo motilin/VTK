@@ -526,6 +526,7 @@ class PlotFunc(QWidget):
         }
 
     def unmarshalize(self, data):
+        self.renderer.RemoveAllViewProps()
         self.renderer.SetBackground(data["background_color"])
         self.global_x_min = data["global_bounds"]["x_min"]
         self.global_x_max = data["global_bounds"]["x_max"]
@@ -540,8 +541,8 @@ class PlotFunc(QWidget):
         self.global_y_max_text.setText(str(self.global_y_max))
         self.global_z_min_text.setText(str(self.global_z_min))
         self.global_z_max_text.setText(str(self.global_z_max))
-        self.update_global_bounds()
         self.functions = []
+        self.update_global_bounds()
         for func_data in data["functions"]:
             func = Func("")
             func.unmarshalize(func_data)
@@ -561,6 +562,7 @@ class PlotFunc(QWidget):
                 coeff, self.coeffs[coeff_symbol], self.coeffs_bounds[coeff_symbol]
             )
         VTKCameraManager.load_camera_state(self.renderer, data["camera"])
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
