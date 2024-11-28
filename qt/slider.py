@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt, QEvent
 from PyQt5.QtGui import QFont, QDoubleValidator, QColor
 
 from src.core.constants import SCALE_FACTOR, DEFAULT_SLIDER_BOUNDS
-
+import re
 
 class Slider(QWidget):
     def __init__(self, parent, bounds, value, text, update_callback):
@@ -67,9 +67,10 @@ class Slider(QWidget):
 
                 # Validate and update bounds
                 if new_bounds[0] < new_bounds[1]:
-                    value = float(self.text_box.text())
-                    self.set_value(value, (new_bounds))
-                    self.update_callback(value, self.bounds)
+                    if self.text_box.text() != "":
+                        value = float(self.text_box.text())
+                        self.set_value(value, (new_bounds))
+                        self.update_callback(value, self.bounds)
 
         # Connect label click event to bounds dialog
         self.label.mousePressEvent = lambda event: show_bounds_dialog()
@@ -88,7 +89,8 @@ class Slider(QWidget):
         self.slider.setMaximum(int(bounds[1] * SCALE_FACTOR))
 
         # Set validator
-        self.text_box.setValidator(QDoubleValidator(bounds[0], bounds[1], 2))
+        # self.text_box.setValidator(QDoubleValidator(bounds[0], bounds[1], 2))
+        self.text_box.setValidator(CustomDoubleValidator(bounds[0], bounds[1], 2))
 
         # Function to update the text box when slider moves
         def update_text_from_slider(slider_value):
@@ -140,7 +142,8 @@ class Slider(QWidget):
             self.slider.setMaximum(int(max_bound * SCALE_FACTOR))
 
             # Update text box validator
-            self.text_box.setValidator(QDoubleValidator(min_bound, max_bound, 2))
+            # self.text_box.setValidator(QDoubleValidator(min_bound, max_bound, 2))
+            self.text_box.setValidator(CustomDoubleValidator(min_bound, max_bound, 2))
 
             # Update stored bounds
             self.bounds = (min_bound, max_bound)
@@ -181,9 +184,9 @@ class BoundsDialog(QDialog):
 
         # Add shadow effect for a floating panel look
         shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(20)
-        shadow.setOffset(0, 5)
-        shadow.setColor(QColor(0, 0, 0, 150))
+        shadow.setBlurRadius(10)
+        shadow.setOffset(0, 3)
+        shadow.setColor(QColor(0, 0, 0, 100))
         self.setGraphicsEffect(shadow)
 
         layout = QHBoxLayout(self)
@@ -222,3 +225,48 @@ class BoundsDialog(QDialog):
 
     def get_bounds(self):
         return (float(self.min_input.text()), float(self.max_input.text()))
+
+
+
+class CustomDoubleValidator(QDoubleValidator):
+    def __init__(self, bottom, top, decimals, parent=None):
+        super().__init__(bottom, top, decimals, parent)
+        self.bottom = bottom
+        self.top = top
+        self.decimals = decimals
+
+    def validate(self, input_text, pos):
+        # Allow empty input
+        if not input_text:
+            return QDoubleValidator.Intermediate, input_text, pos
+
+        # Allow '-' or '-.' as an intermediate state
+        if input_text == '-' or input_text == '-.':
+            return QDoubleValidator.Intermediate, input_text, pos
+
+        # Remove leading/trailing whitespace
+        input_text = input_text.strip()
+
+        # More permissive regex to handle various number formats
+        pattern = r"^[+-]?(\d*\.?\d*|\.\d+)$"
+        if not re.match(pattern, input_text):
+            return QDoubleValidator.Intermediate, input_text, pos
+
+        # Try to convert to float
+        try:
+            value = float(input_text)
+        except ValueError:
+            return QDoubleValidator.Invalid, input_text, pos
+
+        # Check range
+        if self.bottom is not None and self.top is not None:
+            if value < self.bottom or value > self.top:
+                return QDoubleValidator.Intermediate, input_text, pos
+
+        # Check decimal places
+        if "." in input_text:
+            decimal_part = input_text.split(".")[1]
+            if len(decimal_part) > self.decimals:
+                return QDoubleValidator.Invalid, input_text, pos
+
+        return QDoubleValidator.Acceptable, input_text, pos

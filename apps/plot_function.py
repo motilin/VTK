@@ -525,6 +525,7 @@ class PlotFunc(QWidget):
             "camera": VTKCameraManager.save_camera_state(self.renderer),
         }
 
+
     def unmarshalize(self, data):
         self.renderer.RemoveAllViewProps()
         self.renderer.SetBackground(data["background_color"])

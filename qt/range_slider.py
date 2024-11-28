@@ -6,15 +6,25 @@ from PyQt5.QtWidgets import (
     QSpacerItem,
     QSizePolicy,
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QRectF, QEvent, QSize
-from PyQt5.QtGui import QFont, QDoubleValidator, QColor, QPainter, QBrush, QPen
+from PyQt5.QtCore import Qt, pyqtSignal, QRectF, QEvent, QSize, QLocale
+from PyQt5.QtGui import (
+    QFont,
+    QDoubleValidator,
+    QColor,
+    QPainter,
+    QBrush,
+    QPen,
+    QValidator,
+)
 
 from qt.slider import BoundsDialog
 from src.core.constants import SCALE_FACTOR, DEFAULT_SLIDER_BOUNDS
+from qt.slider import CustomDoubleValidator
 
 LABEL_SLIDER_SPACING = 10
 SLIDER_INPUT_SPACING = 10
 MIN_MAX_INPUT_SPACING = 5
+
 
 class RangeSlider(QWidget):
     lowerValueChanged = pyqtSignal(float)
@@ -65,16 +75,26 @@ class RangeSlider(QWidget):
         # Create min and max value textboxes
         self.min_input = QLineEdit(f"{self.mLowerValue:.2f}")
         self.min_input.setFixedWidth(50)
-        self.min_input.setValidator(QDoubleValidator(self.mMinimum, self.mMaximum, 2))
+
+        min_validator = CustomDoubleValidator(self.mMinimum, self.mMaximum, 2)
+        self.min_input.setValidator(min_validator)
+        self.min_input.textChanged.connect(self.validate_input)
+
         self.min_input.editingFinished.connect(self.update_min_value)
         self.layout.addWidget(self.min_input)
-        
-        min_max_input_spacer = QSpacerItem(MIN_MAX_INPUT_SPACING, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+
+        min_max_input_spacer = QSpacerItem(
+            MIN_MAX_INPUT_SPACING, 0, QSizePolicy.Fixed, QSizePolicy.Minimum
+        )
         self.layout.addItem(min_max_input_spacer)
 
         self.max_input = QLineEdit(f"{self.mUpperValue:.2f}")
         self.max_input.setFixedWidth(50)
-        self.max_input.setValidator(QDoubleValidator(self.mMinimum, self.mMaximum, 2))
+
+        max_validator = CustomDoubleValidator(self.mMinimum, self.mMaximum, 2)
+        self.max_input.setValidator(max_validator)
+        self.max_input.textChanged.connect(self.validate_input)
+
         self.max_input.editingFinished.connect(self.update_max_value)
         self.layout.addWidget(self.max_input)
 
@@ -93,12 +113,14 @@ class RangeSlider(QWidget):
 
         # Calculate the actual space available for the slider
         sliderStart = self.label.width()  # Add spacing after label
-        sliderWidth = (self.width() 
-                      - sliderStart  # Start position
-                      - self.min_input.width()  # Width of min input
-                      - self.max_input.width()  # Width of max input
-                      - SLIDER_INPUT_SPACING  # Spacing before min input (matches your spacer)
-                      - MIN_MAX_INPUT_SPACING)  # Spacing between inputs
+        sliderWidth = (
+            self.width()
+            - sliderStart  # Start position
+            - self.min_input.width()  # Width of min input
+            - self.max_input.width()  # Width of max input
+            - SLIDER_INPUT_SPACING  # Spacing before min input (matches your spacer)
+            - MIN_MAX_INPUT_SPACING
+        )  # Spacing between inputs
 
         # Background
         backgroundRect = QRectF(
@@ -250,6 +272,10 @@ class RangeSlider(QWidget):
             self.min_input.setText(f"{self.mLowerValue:.2f}")
             self.max_input.setText(f"{self.mUpperValue:.2f}")
 
+            # Update validator
+            min_validator = CustomDoubleValidator(self.mMinimum, self.mMaximum, 2)
+            self.min_input.setValidator(min_validator)
+            
             self.update()
             self.rangeChanged.emit(self.mMinimum, self.mMaximum)
 
@@ -269,6 +295,10 @@ class RangeSlider(QWidget):
 
             self.min_input.setText(f"{self.mLowerValue:.2f}")
             self.max_input.setText(f"{self.mUpperValue:.2f}")
+            
+            # Update validator
+            max_validator = CustomDoubleValidator(self.mMinimum, self.mMaximum, 2)
+            self.max_input.setValidator(max_validator)
 
             self.update()
             self.rangeChanged.emit(self.mMinimum, self.mMaximum)
@@ -280,13 +310,15 @@ class RangeSlider(QWidget):
 
     def validLength(self):
         # Update to match the calculation in paintEvent
-        return (self.width() 
-                - self.label.width() 
-                - LABEL_SLIDER_SPACING  # Label spacing
-                - self.min_input.width() 
-                - self.max_input.width() 
-                - SLIDER_INPUT_SPACING # Spacing before min input
-                - MIN_MAX_INPUT_SPACING)  # Spacing between inputs
+        return (
+            self.width()
+            - self.label.width()
+            - LABEL_SLIDER_SPACING  # Label spacing
+            - self.min_input.width()
+            - self.max_input.width()
+            - SLIDER_INPUT_SPACING  # Spacing before min input
+            - MIN_MAX_INPUT_SPACING
+        )  # Spacing between inputs
 
     def update_min_value(self):
         try:
@@ -325,3 +357,23 @@ class RangeSlider(QWidget):
         self.max_input.setText(f"{self.mUpperValue:.2f}")
 
         self.update()
+
+    def validate_input(self):
+        sender = self.sender()
+        text = sender.text()
+
+        try:
+            value = float(text)
+        except ValueError:
+            sender.setText("".join(char for char in text if char in ".-0123456789"))
+            return
+
+        if sender == self.min_input:
+            if value > self.mUpperValue:
+                sender.setText(f"{self.mLowerValue:.2f}")
+        elif sender == self.max_input:
+            if value < self.mLowerValue:
+                sender.setText(f"{self.mUpperValue:.2f}")
+
+
+
