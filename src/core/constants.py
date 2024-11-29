@@ -3,6 +3,7 @@ Constants used throughout the application.
 """
 
 from vtkmodules.vtkCommonColor import vtkNamedColors
+import numpy as np
 
 # Window settings
 WINDOW_WIDTH = 1600
@@ -13,7 +14,7 @@ X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX = -10, 10, -10, 10, -10, 10
 CONTROL_PANEL_WIDTH = 300
 CONTROL_PANEL_SPACING = 20
 SCALE_FACTOR = 100
-DEFAULT_SLIDER_BOUNDS = (0, 3)
+DEFAULT_SLIDER_BOUNDS = (0, 2 * np.pi)
 
 
 """
