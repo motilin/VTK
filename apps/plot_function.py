@@ -527,6 +527,8 @@ class PlotFunc(QWidget):
 
 
     def unmarshalize(self, data):
+        self.functions = []
+        self.func_names = []
         self.renderer.RemoveAllViewProps()
         self.renderer.SetBackground(data["background_color"])
         self.global_x_min = data["global_bounds"]["x_min"]
@@ -535,14 +537,12 @@ class PlotFunc(QWidget):
         self.global_y_max = data["global_bounds"]["y_max"]
         self.global_z_min = data["global_bounds"]["z_min"]
         self.global_z_max = data["global_bounds"]["z_max"]
-        # self.x_min.setText(str(self.global_x_min))
         self.global_x_min_text.setText(str(self.global_x_min))
         self.global_x_max_text.setText(str(self.global_x_max))
         self.global_y_min_text.setText(str(self.global_y_min))
         self.global_y_max_text.setText(str(self.global_y_max))
         self.global_z_min_text.setText(str(self.global_z_min))
         self.global_z_max_text.setText(str(self.global_z_max))
-        self.functions = []
         self.update_global_bounds()
         for func_data in data["functions"]:
             func = Func("")
