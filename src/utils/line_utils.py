@@ -285,12 +285,18 @@ def create_parametric_curve_actor(
 ):
     if thickness == 0 or opacity == 0:
         return None
-    tube_radius = thickness / 40
+    
     # Dynamic resolution calculation
     t_span = abs(t_range[1] - t_range[0])
-    base_resolution = int(max(50, min(100, t_span * 200)))
-    resolution = int(base_resolution * max(1, 0.1 / tube_radius))
-    resolution = max(50, min(resolution, 500))
+    tube_radius = thickness / 40
+    
+    # Resolution facor
+    base_resolution = int(max(200, min(100, t_span * 200)))
+    thickness_factor = max(1, 20 * tube_radius)
+    curvature_resolution = int(base_resolution * thickness_factor)
+    
+    # Bound the resolution to prevent extreme values
+    resolution = max(50, min(curvature_resolution, 1000))
 
     # Generate points
     t_min, t_max = t_range
