@@ -397,6 +397,19 @@ def create_point_actor(
     opacity=1.0,  # Actor opacity
     global_bounds=None,  # Global bounds for clipping
 ):
+    # Convert sympy objects to floats
+    try:
+        coordinates = [float(sp.N(coord)) for coord in coordinates]
+    except (TypeError, ValueError) as e:
+        print(f"Error converting coordinates: {e}")
+        return None
+
+    # Validate coordinates
+    if not all(
+        isinstance(coord, (int, float)) and np.isreal(coord) for coord in coordinates
+    ):
+        return None
+
     if global_bounds:
         x_min, x_max, y_min, y_max, z_min, z_max = global_bounds
         if not (x_min <= coordinates[0] <= x_max):
