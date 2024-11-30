@@ -165,12 +165,24 @@ class Func:
             elif self.type == "point":
                 np_func = func
 
+        def safe_np_func(*args):
+            if isinstance(np_func, tuple):
+                result = tuple(f(*args) for f in np_func)
+            else:
+                result = np_func(*args)
+
+            if isinstance(result, tuple):
+                result = tuple(np.where(np.isreal(r), r, 0) for r in result)
+            else:
+                result = np.where(np.isreal(result), result, 0)
+            return result
+
         if self.show_surface or self.type == "point":
-            self.update_surface(np_func, widget.renderer, global_bounds)
+            self.update_surface(safe_np_func, widget.renderer, global_bounds)
             if self.surface_actor:
                 self.surface_actor.SetVisibility(self.show_surface)
         if self.show_lines:
-            self.update_lines(np_func, widget.renderer, global_bounds)
+            self.update_lines(safe_np_func, widget.renderer, global_bounds)
         widget.vtk_widget.get_render_window().Render()
 
     def get_bounds(self, widget):
