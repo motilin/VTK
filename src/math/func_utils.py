@@ -50,6 +50,7 @@ from sympy.parsing.sympy_parser import (
     function_exponentiation,
     split_symbols,
 )
+from src.math.tuple_parser import TupleExpressionParser
 
 
 class Func:
@@ -92,6 +93,8 @@ class Func:
 
     def parse_function(self):
         try:
+            tuple_parser = TupleExpressionParser()
+            preprocessed_text = tuple_parser.preprocess(self.text)
             expr = parse_expr(
                 self.text, evaluate=False, transformations=self.transformations
             )
@@ -150,6 +153,9 @@ class Func:
                     func = tuple([f.subs(coeff, widget.coeffs[coeff]) for f in func])
             else:
                 raise ValueError(f"Missing coefficient: {coeff}")
+            
+        if sp.S.ComplexInfinity in sp.preorder_traversal(func):
+            return
 
         # Create a numpy function from the sympy function
         if isinstance(func, sp.Basic) and self.type == "implicit":
@@ -172,32 +178,32 @@ class Func:
                     result = tuple(f(*args) for f in np_func)
                 else:
                     result = np_func(*args)
-                
+
                 # Check for complex or non-real results
                 def sanitize_result(r):
                     # Completely filter out complex numbers or non-real results
                     if not np.isreal(r):
                         return np.nan  # or np.inf, depending on your specific needs
-                    
+
                     # Optional: Add additional domain validation if needed
                     # For example, checking for valid ranges or infinite values
                     if np.isinf(r) or np.isnan(r):
                         return np.nan
-                    
+
                     return r
-                
+
                 # Apply sanitization to tuple or single result
                 if isinstance(result, tuple):
                     sanitized_result = tuple(sanitize_result(r) for r in result)
                 else:
                     sanitized_result = sanitize_result(result)
-                
+
                 return sanitized_result
-            
+
             except Exception as e:
                 # Comprehensive error handling
                 print(f"Error in safe_np_func: {e}")
-                
+
                 # Return appropriate default based on function type
                 if isinstance(np_func, tuple):
                     return tuple(np.nan for _ in np_func)
@@ -413,3 +419,4 @@ class Func:
         self.show_lines = data["show_lines"]
         self.parse_function()
         return self
+
