@@ -50,7 +50,7 @@ from sympy.parsing.sympy_parser import (
     function_exponentiation,
     split_symbols,
 )
-from src.math.tuple_parser import TupleExpressionParser
+from src.math.tuple_parser import TupleVector
 
 
 class Func:
@@ -93,10 +93,13 @@ class Func:
 
     def parse_function(self):
         try:
-            tuple_parser = TupleExpressionParser()
-            preprocessed_text = tuple_parser.preprocess(self.text)
+            tuples = TupleVector().string_to_tuple_vector(self.text)
+            if len(tuples) > 0:
+                preprocessed_text = str(sum(tuples, TupleVector(0, 0, 0)))
+            else:
+                preprocessed_text = self.text
             expr = parse_expr(
-                self.text, evaluate=False, transformations=self.transformations
+                preprocessed_text, evaluate=False, transformations=self.transformations
             )
             if isinstance(expr, sp.Equality):
                 expr = sp.simplify(expr.lhs) - sp.simplify(expr.rhs)
@@ -153,7 +156,7 @@ class Func:
                     func = tuple([f.subs(coeff, widget.coeffs[coeff]) for f in func])
             else:
                 raise ValueError(f"Missing coefficient: {coeff}")
-            
+
         if sp.S.ComplexInfinity in sp.preorder_traversal(func):
             return
 
@@ -173,14 +176,10 @@ class Func:
 
         def safe_np_func(*args):
             try:
-                # First, handle the function call with potential complex results
-                if isinstance(np_func, tuple):
-                    result = tuple(f(*args) for f in np_func)
-                else:
-                    result = np_func(*args)
-
                 # Check for complex or non-real results
                 def sanitize_result(r):
+                    if isinstance(r, np.ndarray):
+                        return r
                     # Completely filter out complex numbers or non-real results
                     if not np.isreal(r):
                         return np.nan  # or np.inf, depending on your specific needs
@@ -191,9 +190,17 @@ class Func:
                         return np.nan
 
                     return r
-
+               
+                # Apply numpy function to arguments 
+                if isinstance(np_func, tuple):
+                    result = tuple(f(*args) for f in np_func)
+                else:
+                    result = np_func(*args)
+                    
                 # Apply sanitization to tuple or single result
-                if isinstance(result, tuple):
+                if isinstance(result, np.ndarray):
+                    sanitized_result = result
+                elif isinstance(result, tuple):
                     sanitized_result = tuple(sanitize_result(r) for r in result)
                 else:
                     sanitized_result = sanitize_result(result)
@@ -419,4 +426,3 @@ class Func:
         self.show_lines = data["show_lines"]
         self.parse_function()
         return self
-

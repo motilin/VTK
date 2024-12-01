@@ -1,125 +1,81 @@
-class TupleExpressionParser:
-    def __init__(self):
-        # Initialize parsing context and configuration
-        self.parsing_context = {
-            'current_token': None,
-            'token_stream': [],
-            'error_log': [],
-            'nested_level': 0
-        }
-    
-    def tokenize(self, expression):
-        """
-        Advanced tokenization strategy
-        
-        Breaks down input expression into meaningful tokens:
-        - Identifies scalars, tuples, operators
-        - Handles nested structures
-        - Preserves mathematical semantics
-        """
-        tokens = []
-        current_token = ''
-        in_tuple = False
-        nested_depth = 0
-        
-        for char in expression:
-            if char == '(':
-                nested_depth += 1
-                in_tuple = True
-                current_token += char
-            elif char == ')':
-                nested_depth -= 1
-                current_token += char
-                if nested_depth == 0:
-                    in_tuple = False
-            elif char in ['+', '-', '*'] and not in_tuple:
-                # Operator handling
-                if current_token:
-                    tokens.append(current_token)
-                tokens.append(char)
-                current_token = ''
-            else:
-                current_token += char
-        
-        if current_token:
-            tokens.append(current_token)
-        
-        return tokens
-    
-    def parse_tuple_expression(self, tokens):
-        """
-        Recursive descent parsing of tuple expressions
-        
-        Core parsing strategy with multi-level parsing:
-        - Handles scalar multiplication
-        - Manages tuple additions/subtractions
-        - Supports nested tuple structures
-        """
-        def parse_scalar_tuple(tokens):
-            """Parse scalar * tuple multiplication"""
-            result = []
-            i = 0
-            while i < len(tokens):
-                if isinstance(tokens[i], str) and tokens[i].startswith('('):
-                    # Tuple handling
-                    tuple_contents = tokens[i][1:-1].split(',')
-                    if i > 0 and isinstance(tokens[i-1], (int, float, str)):
-                        # Scalar multiplication
-                        scalar = tokens[i-1]
-                        transformed_tuple = [f"{scalar}*{item.strip()}" for item in tuple_contents]
-                        result.extend(transformed_tuple)
-                    else:
-                        result.extend(tuple_contents)
-                else:
-                    result.append(tokens[i])
-                i += 1
-            return result
-        
-        def combine_expressions(parsed_tokens):
-            """Combine parsed tokens into final expression"""
-            combined = []
-            current_expr = []
-            current_op = '+'
-            
-            for token in parsed_tokens:
-                if token in ['+', '-']:
-                    current_op = token
-                else:
-                    if current_op == '+':
-                        current_expr.append(token)
-                    elif current_op == '-':
-                        current_expr.append(f'-{token}')
-            
-            return ', '.join(current_expr)
-        
-        # Multilevel parsing strategy
-        scalar_parsed = parse_scalar_tuple(tokens)
-        final_expression = combine_expressions(scalar_parsed)
-        
-        return f'({final_expression})'
-    
-    def preprocess(self, expression):
-        """
-        Main preprocessing method
-        
-        Orchestrates the entire parsing and transformation process
-        """
-        try:
-            # Step 1: Tokenization
-            tokens = self.tokenize(expression)
-            
-            # Step 2: Expression Parsing
-            processed_expression = self.parse_tuple_expression(tokens)
-            
-            return processed_expression
-        
-        except Exception as e:
-            # Robust error handling
-            error_msg = f"Parsing failed: {str(e)}"
-            self.parsing_context['error_log'].append(error_msg)
-            raise ValueError(error_msg)
+import re
+import sympy as sp
 
-# Example usage demonstration
-def preprocess_tuple_expression(expr):
-    parser = TupleExpressionParser()
-    return parser.preprocess(expr)
+class TupleVector:
+    def __init__(self, *elements):
+        self.elements = elements
+    
+    def __add__(self, other):
+        if isinstance(other, TupleVector):
+            return TupleVector(*[a + b for a, b in zip(self.elements, other.elements)])
+        return NotImplemented
+    
+    def __sub__(self, other):
+        if isinstance(other, TupleVector):
+            return TupleVector(*[a - b for a, b in zip(self.elements, other.elements)])
+        return NotImplemented
+    
+    def __mul__(self, scalar):
+        return TupleVector(*[scalar * x for x in self.elements])
+    
+    def __rmul__(self, scalar):
+        return self.__mul__(scalar)
+    
+    def __div__(self, scalar):
+        return TupleVector(*[x / scalar for x in self.elements])
+    
+    def __truediv__(self, scalar):
+        return TupleVector(*[x / scalar for x in self.elements])
+    
+    def __floordiv__(self, scalar):
+        return TupleVector(*[x // scalar for x in self.elements])
+    
+    def __repr__(self):
+        return f"({', '.join(map(str, self.elements))})"
+    
+    def __str__(self):
+        return f"({', '.join(map(str, self.elements))})"
+    
+    # Function to convert complex string such as "a(b+c,d,e)+(f,g,h)-i(1,2,3)" to TupleVector
+    def string_to_tuple_vector(self, string):
+        # Regular expression to find 3D tuples with preceding sign and symbol/number
+        pattern = re.compile(r'([+-]?\s*[\w\d\.]*\*?\s*|\([^\)]+\)\s*\*?\s*)?\(([^,]+),([^,]+),([^)]+)\)')
+        matches = pattern.findall(string)
+        
+        # Convert matches to TupleVector
+        tuple_vectors = []
+        for match in matches:
+            sign_symbol = match[0].strip()
+            elements = [sp.sympify(element.strip()) for element in match[1:]]
+            tuple_vector = TupleVector(*elements)
+            
+            # Process the preceding sign and symbol/number
+            if sign_symbol:
+                sign_symbol = sign_symbol.replace(' ', '')
+                sign_symbol = sign_symbol.replace('*', '')
+                if sign_symbol.startswith('-'):
+                    sign = -1
+                    sign_symbol = sign_symbol[1:]
+                else:
+                    sign = 1
+                    if sign_symbol.startswith('+'):
+                        sign_symbol = sign_symbol[1:]
+                
+                if sign_symbol:
+                    scalar = sp.sympify(sign_symbol)
+                    tuple_vector = scalar * tuple_vector
+                tuple_vector = sign * tuple_vector
+            
+            tuple_vectors.append(tuple_vector)
+        
+        return tuple_vectors 
+
+
+# Test string_to_tuple_vector with extended units
+# t_extended = TupleVector().string_to_tuple_vector("-2.05*(b+c,d,e)+3*(f,g,h)-2(1,2,3)+a(4,5,6)")
+# t_extended = TupleVector().string_to_tuple_vector("x^2+y^2-z^2-1")
+# print(t_extended)
+
+# Sum the tuple vectors with an initial value of TupleVector(0, 0, 0)
+# result_sum = sum(t_extended, TupleVector(0, 0, 0))
+# print(str(result_sum))
