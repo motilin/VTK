@@ -399,6 +399,7 @@ def create_point_actor(
 ):
     # Convert sympy objects to floats
     try:
+        coordinates = coordinates()
         coordinates = [float(sp.N(coord)) for coord in coordinates]
     except (TypeError, ValueError) as e:
         print(f"Error converting coordinates: {e}")

@@ -3,7 +3,7 @@ import sympy as sp
 
 class TupleVector:
     def __init__(self, *elements):
-        self.elements = elements
+        self.elements = tuple(elements)
     
     def __add__(self, other):
         if isinstance(other, TupleVector):
@@ -16,19 +16,18 @@ class TupleVector:
         return NotImplemented
     
     def __mul__(self, scalar):
-        return TupleVector(*[scalar * x for x in self.elements])
+        # Ensure scalar multiplication works with symbolic variables
+        try:
+            return TupleVector(*[scalar * x for x in self.elements])
+        except TypeError:
+            # Fallback for cases where direct multiplication fails
+            return TupleVector(*[sp.simplify(scalar * x) for x in self.elements])
     
     def __rmul__(self, scalar):
         return self.__mul__(scalar)
     
-    def __div__(self, scalar):
-        return TupleVector(*[x / scalar for x in self.elements])
-    
     def __truediv__(self, scalar):
         return TupleVector(*[x / scalar for x in self.elements])
-    
-    def __floordiv__(self, scalar):
-        return TupleVector(*[x // scalar for x in self.elements])
     
     def __repr__(self):
         return f"({', '.join(map(str, self.elements))})"
@@ -36,46 +35,97 @@ class TupleVector:
     def __str__(self):
         return f"({', '.join(map(str, self.elements))})"
     
-    # Function to convert complex string such as "a(b+c,d,e)+(f,g,h)-i(1,2,3)" to TupleVector
     def string_to_tuple_vector(self, string):
-        # Regular expression to find 3D tuples with preceding sign and symbol/number
-        pattern = re.compile(r'([+-]?\s*[\w\d\.]*\*?\s*|\([^\)]+\)\s*\*?\s*)?\(([^,]+),([^,]+),([^)]+)\)')
+        # Enhanced regex to capture complex tuples and surrounding operations
+        pattern = re.compile(r'((?:[+-]?\s*[\w\d\.]*\*?)?)\s*(\([^()]*(?:\([^()]*\)[^()]*)*\))')
+        
+        # Find all matches in the string
         matches = pattern.findall(string)
         
-        # Convert matches to TupleVector
+        # Process matches into TupleVector objects
         tuple_vectors = []
-        for match in matches:
-            sign_symbol = match[0].strip()
-            elements = [sp.sympify(element.strip()) for element in match[1:]]
-            tuple_vector = TupleVector(*elements)
-            
-            # Process the preceding sign and symbol/number
-            if sign_symbol:
-                sign_symbol = sign_symbol.replace(' ', '')
-                sign_symbol = sign_symbol.replace('*', '')
-                if sign_symbol.startswith('-'):
-                    sign = -1
-                    sign_symbol = sign_symbol[1:]
-                else:
-                    sign = 1
-                    if sign_symbol.startswith('+'):
-                        sign_symbol = sign_symbol[1:]
-                
-                if sign_symbol:
-                    scalar = sp.sympify(sign_symbol)
-                    tuple_vector = scalar * tuple_vector
-                tuple_vector = sign * tuple_vector
-            
-            tuple_vectors.append(tuple_vector)
         
-        return tuple_vectors 
+        for match in matches:
+            # Clean up the preceding expression
+            pre_expr = match[0].strip()
+            
+            # Extract elements from the tuple (removing outer parentheses)
+            tuple_str = match[1][1:-1]  # Remove the first and last parenthesis
+            
+            # Split elements, handling potential nested expressions
+            elements = self._split_tuple_elements(tuple_str)
+            
+            # Create TupleVector
+            current_vector = TupleVector(*[sp.sympify(elem.strip()) for elem in elements])
+            
+            # Process preceding expression (sign and scalar)
+            if pre_expr:
+                # Remove any extra spaces and asterisks
+                pre_expr = pre_expr.replace(' ', '').replace('*', '')
+                
+                # Determine sign
+                sign = 1
+                if pre_expr.startswith('-'):
+                    sign = -1
+                    pre_expr = pre_expr[1:]
+                elif pre_expr.startswith('+'):
+                    pre_expr = pre_expr[1:]
+                
+                # Apply scalar if present
+                if pre_expr:
+                    scalar = sp.sympify(pre_expr)
+                    current_vector = scalar * current_vector
+                
+                # Apply sign
+                current_vector = sign * current_vector
+            
+            tuple_vectors.append(current_vector)
+        
+        return tuple_vectors
+    
+    def _split_tuple_elements(self, tuple_str):
+        # Custom splitting that respects nested parentheses
+        elements = []
+        current_element = []
+        paren_count = 0
+        
+        for char in tuple_str:
+            if char == ',' and paren_count == 0:
+                # Complete current element
+                elements.append(''.join(current_element))
+                current_element = []
+            else:
+                # Track parentheses nesting
+                if char == '(':
+                    paren_count += 1
+                elif char == ')':
+                    paren_count -= 1
+                
+                current_element.append(char)
+        
+        # Add last element
+        if current_element:
+            elements.append(''.join(current_element))
+        
+        return elements
 
+# Example usage and testing
+tv = TupleVector(1, 2, 3)
+parser = tv.string_to_tuple_vector
 
-# Test string_to_tuple_vector with extended units
-# t_extended = TupleVector().string_to_tuple_vector("-2.05*(b+c,d,e)+3*(f,g,h)-2(1,2,3)+a(4,5,6)")
-# t_extended = TupleVector().string_to_tuple_vector("x^2+y^2-z^2-1")
-# print(t_extended)
+# Test cases
+test_cases = [
+    "(a,b,c)+(d,e,f)-(g,h,i)",
+    "2(a,b,c)",
+    "x(a,b,c)",
+    "((a+2)/b)(c,d,e)",
+    "2((a+2)/b)(c,d,e)",
+    "(1/(1+a),a/(1+a),a^2/(1+a))"
+]
 
-# Sum the tuple vectors with an initial value of TupleVector(0, 0, 0)
-# result_sum = sum(t_extended, TupleVector(0, 0, 0))
-# print(str(result_sum))
+for case in test_cases:
+    print(f"Parsing: {case}")
+    results = parser(case)
+    for result in results:
+        print(result)
+    print()

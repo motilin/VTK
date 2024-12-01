@@ -94,7 +94,7 @@ class Func:
     def parse_function(self):
         try:
             tuples = TupleVector().string_to_tuple_vector(self.text)
-            if len(tuples) > 0:
+            if tuples and len(tuples) > 0:
                 preprocessed_text = str(sum(tuples, TupleVector(0, 0, 0)))
             else:
                 preprocessed_text = self.text
@@ -190,13 +190,15 @@ class Func:
                         return np.nan
 
                     return r
-               
-                # Apply numpy function to arguments 
-                if isinstance(np_func, tuple):
-                    result = tuple(f(*args) for f in np_func)
-                else:
+
+                # Apply numpy function to arguments
+                if self.type == "point":
+                    return np_func
+                if not isinstance(np_func, tuple):
                     result = np_func(*args)
-                    
+                else:
+                    raise ValueError("Tuple functions not supported in safe_np_func")
+
                 # Apply sanitization to tuple or single result
                 if isinstance(result, np.ndarray):
                     sanitized_result = result
@@ -210,12 +212,6 @@ class Func:
             except Exception as e:
                 # Comprehensive error handling
                 print(f"Error in safe_np_func: {e}")
-
-                # Return appropriate default based on function type
-                if isinstance(np_func, tuple):
-                    return tuple(np.nan for _ in np_func)
-                else:
-                    return np.nan
 
         if self.show_surface or self.type == "point":
             self.update_surface(safe_np_func, widget.renderer, global_bounds)
