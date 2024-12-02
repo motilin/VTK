@@ -93,62 +93,68 @@ class TupleVector:
 
         return result
 
-    def find_matching_paren(self, s, start):
-        stack = []
-        for i in range(start, len(s)):
-            if s[i] == "(":
-                stack.append("(")
-            elif s[i] == ")":
-                stack.pop()
-                if not stack:
-                    return i
-        return -1
+    def split_string_around_tuple2(self, string):
+        # Define the regex pattern to match the 3D tuple
+        pattern = re.compile(r"(.*?)(\([^\(\),]+,[^\(\),]+,[^\(\),]+\))(.*)")
 
-    def is_valid_tuple(self, s):
-        # Check if the string contains exactly two commas
-        if not s.count(",") == 2:
-            return False
-        # Check that all the elements of the tuple are non-empty
-        elements = s[1:-1].split(",")
-        return all(elements)
-        
+        # Match the pattern and capture the groups
+        match = pattern.match(string)
+        if match and match.group(2):
+            return [match.group(1), match.group(2), match.group(3)]
+        else:
+            return None
 
-    def find_valid_tuple(self, string):
+    def split_string_around_tuple(self, string):
+        def find_matching_paren(s, start):
+            stack = []
+            for i in range(start, len(s)):
+                if s[i] == "(":
+                    stack.append("(")
+                elif s[i] == ")":
+                    stack.pop()
+                    if not stack:
+                        return i
+            return -1
+
+        def is_valid_tuple(s):
+            # Check if the string contains exactly two commas
+            if not s.count(",") == 2:
+                return False
+            # Check if there are 3 non-empty elements
+            if not all(s.strip() for s in s[1:-1].split(",")):
+                return False
+            return True
+
         start = 0
         while start < len(string):
             start = string.find("(", start)
             if start == -1:
                 break
 
-            end = self.find_matching_paren(string, start)
+            end = find_matching_paren(string, start)
             if end == -1:
                 break
 
-            tuple_str = string[start:end + 1]
-            if self.is_valid_tuple(tuple_str):
+            tuple_str = string[start : end + 1]
+            if is_valid_tuple(tuple_str):
                 before = string[:start]
-                after = string[end + 1:]
-                return before, tuple_str, after
+                after = string[end + 1 :]
+                return [before, tuple_str, after]
 
             start += 1
 
-        return None, None, None
-
-    def split_string_around_tuple(self, string):
-        before, tuple_str, after = self.find_valid_tuple(string)
-        if not tuple_str:
-            return None
-        return [before, tuple_str, after]
+        return None
 
     def from_string(self, tuple_string):
         tuple_string = self.clear_whitespace(tuple_string)
-        _, tuple_str, _ = self.find_valid_tuple(tuple_string)
+        # Define the regex pattern to match a legal 3D tuple
+        pattern = re.compile(r"^\(([^\(\),]+),([^\(\),]+),([^\(\),]+)\)$")
 
-        if tuple_str:
-            # Remove the parentheses
-            tuple_str = tuple_str[1:-1]
-            # Split the elements
-            elements = tuple_str.split(",")
+        # Match the pattern and capture the groups
+        match = pattern.match(tuple_string)
+        if match:
+            # Extract the elements of the tuple
+            elements = match.groups()
             elements = [self.parse_element(element) for element in elements]
             # Convert the elements to float and create a TupleVector object
             return TupleVector(*elements)
