@@ -190,7 +190,10 @@ class ControlWidget(QWidget):
 
         def adjust_textbox_height():
             text = textbox.toPlainText()
-            lines = text.count("\n") + 2
+            font_metrics = QFontMetrics(textbox.font())
+            text_width = font_metrics.horizontalAdvance(text)
+            textbox_width = textbox.width()
+            lines = (text_width // textbox_width) + text.count("\n") + 2
             textbox.setFixedHeight(line_height * max(lines, 2))
 
         textbox.textChanged.connect(adjust_textbox_height)
