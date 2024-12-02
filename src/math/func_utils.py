@@ -93,9 +93,10 @@ class Func:
 
     def parse_function(self):
         try:
-            tuples = TupleVector().string_to_tuple_vector(self.text)
-            if tuples and len(tuples) > 0:
-                preprocessed_text = str(sum(tuples, TupleVector(0, 0, 0)))
+            tv = TupleVector()
+            tv.parse(self.text)
+            if len(tv) == 3:
+                preprocessed_text = str(tv)
             else:
                 preprocessed_text = self.text
             expr = parse_expr(
