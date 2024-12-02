@@ -111,7 +111,6 @@ class TupleVector:
         # Check that all the elements of the tuple are non-empty
         elements = s[1:-1].split(",")
         return all(elements)
-        
 
     def find_valid_tuple(self, string):
         start = 0
@@ -124,10 +123,10 @@ class TupleVector:
             if end == -1:
                 break
 
-            tuple_str = string[start:end + 1]
+            tuple_str = string[start : end + 1]
             if self.is_valid_tuple(tuple_str):
                 before = string[:start]
-                after = string[end + 1:]
+                after = string[end + 1 :]
                 return before, tuple_str, after
 
             start += 1
@@ -141,7 +140,7 @@ class TupleVector:
         return [before, tuple_str, after]
 
     def from_string(self, tuple_string):
-        tuple_string = self.clear_whitespace(tuple_string)
+        tuple_string = tuple_string.strip()
         _, tuple_str, _ = self.find_valid_tuple(tuple_string)
 
         if tuple_str:
@@ -156,10 +155,9 @@ class TupleVector:
             raise ValueError("Invalid 3D tuple string")
 
     def parse_element(self, element):
-        element = self.clear_whitespace(element)
-        if element == "+":
+        if element.strip() == "+":
             element = "1"
-        elif element == "-":
+        elif element.strip() == "-":
             element = "-1"
         # Parse the expression and return the result
         return parse_expr(element, transformations=TRANSFORMATIONS)
@@ -170,8 +168,8 @@ class TupleVector:
         self.elements = tuple_vector.elements
 
         # Process the prefix
-        prefix = tuple_list[0]
-        prefix = self.clear_whitespace(prefix)
+        prefix = tuple_list[0].strip()
+        # prefix = self.clear_whitespace(prefix)
         if prefix.endswith("*"):
             prefix = prefix[:-1]
         if prefix:
@@ -179,8 +177,8 @@ class TupleVector:
             self.elements = (prefix_value * self).elements
 
         # Process the suffix
-        suffix = tuple_list[2]
-        suffix = self.clear_whitespace(suffix)
+        suffix = tuple_list[2].strip()
+        # suffix = self.clear_whitespace(suffix)
         if suffix.startswith("/"):
             suffix = suffix[1:]
             if suffix:
@@ -358,6 +356,26 @@ def test_parse():
         1 / (1 + a) + t * (-1) / (1 + a) ** 2,
         a / (1 + a) + t * 1 / (1 + a) ** 2,
         a**2 / (1 + a) + t * a * (2 + a) / (1 + a) ** 2,
+    )
+    assert tv.elements == expected
+
+    string = "(a*sin(a), exp(a) cos(a), sin(a) cos(a)) + t(a*cos(a)+sin(a) , exp(a)(cos(a)-sin(a)),cos(2a)) / sqrt((a*cos(a)+sin(a))^2 + (exp(a)(cos(a)-sin(a)))^2 + (cos(2a))^2)"
+    tv.parse(string)
+    a, t = sp.symbols("a t")
+    expected = (
+        a*sp.sin(a) + t*(a*sp.cos(a) + sp.sin(a)) / sp.sqrt((a*sp.cos(a) + sp.sin(a))**2 + (sp.exp(a)*(sp.cos(a) - sp.sin(a)))**2 + (sp.cos(2*a))**2), # type: ignore
+        sp.exp(a)*sp.cos(a) + t*(sp.exp(a)*(sp.cos(a) - sp.sin(a))) / sp.sqrt((a*sp.cos(a) + sp.sin(a))**2 + (sp.exp(a)*(sp.cos(a) - sp.sin(a)))**2 + (sp.cos(2*a))**2), # type: ignore
+        sp.sin(a)*sp.cos(a) + t*sp.cos(2*a) / sp.sqrt((a*sp.cos(a) + sp.sin(a))**2 + (sp.exp(a)*(sp.cos(a) - sp.sin(a)))**2 + (sp.cos(2*a))**2), # type: ignore
+    )
+    assert tv.elements == expected
+    
+    string = "(t sin(a), t cos(a), t)"
+    tv.parse(string)
+    a, t = sp.symbols("a t")
+    expected = (
+        t*sp.sin(a),
+        t*sp.cos(a),
+        t,
     )
     assert tv.elements == expected
 
