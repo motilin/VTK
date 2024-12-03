@@ -202,6 +202,8 @@ class TupleVector:
                 self.multiply_surroundings(tuple_list)
             result_vector += self
         self.elements = result_vector.elements
+        
+
 
 
 ### Tests ###
@@ -380,6 +382,7 @@ def test_parse():
     assert tv.elements == expected
 
 
+    
 if __name__ == "__main__":
     test_clear_whitespace()
     test_split_string_on_plus_minus()

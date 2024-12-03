@@ -42,6 +42,7 @@ from src.utils.line_utils import (
     create_parametric_surface_traces_actor,
 )
 import sympy as sp
+from sympy.matrices import MatrixBase, ImmutableDenseMatrix
 from sympy.parsing.sympy_parser import (
     parse_expr,
     standard_transformations,
@@ -50,7 +51,7 @@ from sympy.parsing.sympy_parser import (
     function_exponentiation,
     split_symbols,
 )
-from src.math.tuple_parser import TupleVector
+from src.math.tuple_to_matrix import replace_tuples_with_matrix
 
 
 class Func:
@@ -93,23 +94,22 @@ class Func:
 
     def parse_function(self):
         try:
-            tv = TupleVector()
-            tv.parse(self.text)
-            if len(tv) == 3:
-                preprocessed_text = str(tv)
-            else:
-                preprocessed_text = self.text
-            expr = parse_expr(
-                preprocessed_text, evaluate=False, transformations=self.transformations
-            )
+            preprocessed_text = replace_tuples_with_matrix(self.text)
+            try:
+                expr = parse_expr(
+                    preprocessed_text, evaluate=False, transformations=self.transformations
+                )
+            except Exception as e:
+                print(f"Error parsing expression: {e}")
+                return
             if isinstance(expr, sp.Equality):
                 expr = sp.simplify(expr.lhs) - sp.simplify(expr.rhs)
             self.func = expr
 
-            if isinstance(expr, tuple):
-                if len(expr) == 3:
+            if isinstance(expr, MatrixBase):
+                if expr.shape == (3, 1):
                     u, v, t = sp.symbols("u v t")
-                    all_symbols = set.union(*[e.free_symbols for e in expr])
+                    all_symbols = expr.free_symbols
                     if (
                         t in all_symbols
                         and u not in all_symbols
@@ -136,6 +136,9 @@ class Func:
                 self.coeffs = expr.free_symbols - {x, y, z}
                 self.type = "implicit"
                 self.legal = True
+                
+            else:
+                self.legal = False
 
             if self.legal:
                 self.str = expr.__str__()
@@ -145,16 +148,18 @@ class Func:
             self.legal = False
 
     def update_render(self, widget):
+        if not self.legal:
+            return
         func = copy.copy(self.func)
         global_bounds = self.get_bounds(widget)
 
         # Replace coefficients with values
         for coeff in self.coeffs:
             if coeff in widget.coeffs:
-                if isinstance(func, sp.Basic):
-                    func = func.subs(coeff, widget.coeffs[coeff])
-                elif isinstance(func, tuple):
-                    func = tuple([f.subs(coeff, widget.coeffs[coeff]) for f in func])
+                # if isinstance(func, sp.Basic):
+                func = func.subs(coeff, widget.coeffs[coeff])
+                # elif isinstance(func, tuple):
+                    # func = tuple([f.subs(coeff, widget.coeffs[coeff]) for f in func])
             else:
                 raise ValueError(f"Missing coefficient: {coeff}")
 
@@ -165,7 +170,8 @@ class Func:
         if isinstance(func, sp.Basic) and self.type == "implicit":
             x, y, z = sp.symbols("x y z")
             np_func = sp.lambdify((x, y, z), func, "numpy")
-        elif isinstance(func, tuple):
+        elif isinstance(func, MatrixBase):
+            func = tuple([item for sublist in func.tolist() for item in sublist])
             if self.type == "parametric-1":
                 t = sp.symbols("t")
                 np_func = sp.lambdify(t, func, "numpy")
