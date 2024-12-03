@@ -53,6 +53,7 @@ from sympy.parsing.sympy_parser import (
 )
 from src.math.text_preprocessing import preprocess_text
 
+
 class Func:
     def __init__(self, text):
         self.text = text
@@ -344,10 +345,11 @@ class Func:
                 func1 = sp.simplify(sp.expand(self.func))
                 func2 = sp.simplify(sp.expand(other.func))
                 return str(func1) == str(func2)
-            elif isinstance(self.func, tuple) and isinstance(other.func, tuple):
-                for comp1, comp2 in zip(self.func, other.func):
-                    if not sp.simplify(comp1 - comp2) == 0:
-                        return False
+            elif isinstance(self.func, MatrixBase) and isinstance(
+                other.func, MatrixBase
+            ):
+                if not sp.simplify(self.func - other.func) == sp.Matrix([0, 0, 0]):
+                    return False
                 return True
         return False
 
