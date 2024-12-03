@@ -141,7 +141,8 @@ class Func:
                 self.legal = False
 
             if self.legal:
-                self.str = sp.latex(self.func)
+                # self.str = sp.latex(self.func)
+                self.str = str(self.func)
 
         except Exception as e:
             print(e)

@@ -3,6 +3,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QStyledItemDelegate
 from PyQt5.QtCore import QSize
 
+from PyQt5.QtGui import QTextDocument
 
 class CustomLatexWidget(QWidget):
     def __init__(self, latex_text, parent=None):
@@ -46,4 +47,6 @@ class LatexDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
     def sizeHint(self, option, index):
-        return QSize(200, 50)  # Adjust size as needed
+        return QSize(200, 30)  # Adjust size as needed
+
+

@@ -4,7 +4,7 @@ import re
 TERMS_DICT = {
     "cross": ".cross",
     "dot": ".dot",
-    "norm": ".norm",
+    "norm": ".norm()",
 }
 
 
@@ -227,5 +227,6 @@ transformations = standard_transformations + (
             split_symbols,
         )
 string = 't( (Matrix([1,2,3]))  .cross  (Matrix([2,3,4])) )'
-parse_expr(string, transformations=transformations, evaluate=False)
+string = 't( (Matrix([1,2,3]))  ) .norm()'
+parse_expr(string, transformations=transformations)
 """
