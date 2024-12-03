@@ -51,8 +51,7 @@ from sympy.parsing.sympy_parser import (
     function_exponentiation,
     split_symbols,
 )
-from src.math.tuple_to_matrix import replace_tuples_with_matrix
-
+from src.math.text_preprocessing import preprocess_text
 
 class Func:
     def __init__(self, text):
@@ -94,10 +93,11 @@ class Func:
 
     def parse_function(self):
         try:
-            preprocessed_text = replace_tuples_with_matrix(self.text)
+            preprocessed_text = preprocess_text(self.text)
             try:
                 expr = parse_expr(
-                    preprocessed_text, evaluate=False, transformations=self.transformations
+                    preprocessed_text,
+                    transformations=self.transformations,
                 )
             except Exception as e:
                 print(f"Error parsing expression: {e}")
@@ -136,12 +136,12 @@ class Func:
                 self.coeffs = expr.free_symbols - {x, y, z}
                 self.type = "implicit"
                 self.legal = True
-                
+
             else:
                 self.legal = False
 
             if self.legal:
-                self.str = expr.__str__()
+                self.str = sp.latex(self.func)
 
         except Exception as e:
             print(e)
@@ -159,7 +159,7 @@ class Func:
                 # if isinstance(func, sp.Basic):
                 func = func.subs(coeff, widget.coeffs[coeff])
                 # elif isinstance(func, tuple):
-                    # func = tuple([f.subs(coeff, widget.coeffs[coeff]) for f in func])
+                # func = tuple([f.subs(coeff, widget.coeffs[coeff]) for f in func])
             else:
                 raise ValueError(f"Missing coefficient: {coeff}")
 

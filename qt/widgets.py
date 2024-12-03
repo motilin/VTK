@@ -13,11 +13,13 @@ from PyQt5.QtWidgets import (
     QColorDialog,
 )
 from PyQt5.QtGui import QDoubleValidator, QFontMetrics, QColor
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import Qt
 import vtk
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from src.core.interactor import CustomInteractorStyle
 from qt.range_slider import RangeSlider
+from qt.latex_utils import LatexDelegate
 from qt.slider import Slider
 from src.core.constants import (
     CONTROL_PANEL_WIDTH,
@@ -143,8 +145,10 @@ class ControlWidget(QWidget):
         self.layout.addLayout(button_layout)
 
         return button
+    
+    
 
-    def add_dropdown(self, text, options, callback):
+    def add_dropdown2(self, text, options, callback):
         label = QLabel(text, self)
         dropdown = QComboBox(self)
         dropdown.addItems(options)
@@ -165,9 +169,47 @@ class ControlWidget(QWidget):
 
         return dropdown
 
+    def update_dropdown2(self, dropdown, options):
+        dropdown.clear()
+        dropdown.addItems(options)
+        
+        
+       
+
+
+
+    def add_dropdown(self, text, options, callback):
+        label = QLabel(text, self)
+        dropdown = QComboBox(self)
+        dropdown.addItems(options)
+        dropdown.currentIndexChanged.connect(callback)
+
+        # Set custom delegate for rendering LaTeX
+        delegate = LatexDelegate(dropdown)
+        dropdown.setItemDelegate(delegate)
+
+        # Ensure dropdown stretches
+        dropdown.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        dropdown_layout = QHBoxLayout()
+        dropdown_layout.addWidget(label, alignment=Qt.AlignLeft)
+        dropdown_layout.addWidget(dropdown, stretch=1)
+
+        # Set the layout stretch factor for proper resizing
+        dropdown_layout.setStretch(0, 0)  # Label doesn't stretch
+        dropdown_layout.setStretch(1, 1)  # Dropdown stretches
+
+        self.layout.addLayout(dropdown_layout)
+
+        return dropdown
+
     def update_dropdown(self, dropdown, options):
         dropdown.clear()
         dropdown.addItems(options)
+        
+        
+        
+        
 
     def add_checkbox(self, text, value, callback):
         checkbox = QCheckBox(text, self)
