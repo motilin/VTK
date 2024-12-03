@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSizePolicy
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QStyledItemDelegate
 from PyQt5.QtCore import QSize
@@ -37,6 +37,7 @@ class LatexDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         latex_text = index.data()
         editor = CustomLatexWidget(latex_text, parent)
+        editor.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         return editor
 
     def setEditorData(self, editor, index):
