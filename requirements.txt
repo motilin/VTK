@@ -4,5 +4,4 @@ numpy>=1.19.0
 rich>=10.0.0
 PyQt5>=5.15.0
 vtkmodules>=9.0.0
-astor>=0.8.1
 PyQtWebEngine>=5.15.9

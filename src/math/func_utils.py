@@ -142,7 +142,7 @@ class Func:
 
             if self.legal:
                 # self.str = sp.latex(self.func)
-                self.str = str(self.func)
+                self.str = str(self.func).replace("Matrix", "")
 
         except Exception as e:
             print(e)
