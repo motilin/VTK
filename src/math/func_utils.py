@@ -348,7 +348,10 @@ class Func:
             elif isinstance(self.func, MatrixBase) and isinstance(
                 other.func, MatrixBase
             ):
-                if not sp.simplify(self.func - other.func) == sp.Matrix([0, 0, 0]):
+                if (
+                    not sp.simplify(self.func - other.func) == sp.Matrix([0, 0, 0])
+                    and not self.str.strip() == other.str.strip()
+                ):
                     return False
                 return True
         return False
