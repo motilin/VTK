@@ -63,9 +63,9 @@ class Func:
         self.t_range = (0, 1)
         self.u_range = (0, 1)
         self.v_range = (0, 1)
-        self.t_range_bounds = DEFAULT_SLIDER_BOUNDS
-        self.u_range_bounds = DEFAULT_SLIDER_BOUNDS
-        self.v_range_bounds = DEFAULT_SLIDER_BOUNDS
+        self.t_range_bounds = (-DEFAULT_SLIDER_BOUNDS[1], DEFAULT_SLIDER_BOUNDS[1])
+        self.u_range_bounds = (-DEFAULT_SLIDER_BOUNDS[1], DEFAULT_SLIDER_BOUNDS[1])
+        self.v_range_bounds = (-DEFAULT_SLIDER_BOUNDS[1], DEFAULT_SLIDER_BOUNDS[1])
         self.trace_spacing = 1
         self.trace_spacing_bounds = DEFAULT_SLIDER_BOUNDS
         self.thickness = 1
