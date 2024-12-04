@@ -1,4 +1,5 @@
-import re, copy, vtk, rich
+import re, copy, vtk
+from rich.console import Console
 import numpy as np
 from numpy import (
     sin,
@@ -90,10 +91,15 @@ class Func:
         self.coeffs = set()
         self.surface_actor = None
         self.lines_actor = None
+        self.console = Console()
         self.parse_function()
 
     def parse_function(self):
         try:
+            if self.text.strip() == "":
+                self.console.print(":arrow_forward:")
+                self.legal = False
+                return
             preprocessed_text = preprocess_text(self.text)
             try:
                 expr = parse_expr(
@@ -139,11 +145,11 @@ class Func:
                 if diff == 0:
                     self.type = "number"
                     self.legal = False
-                    rich.print(f"{self.text} = {expr.evalf()}") # type: ignore
+                    self.console.print(f"{self.text} = {expr.evalf()}")  # type: ignore
                 elif diff == 1:
                     self.type = "single"
                     self.legal = False
-                    rich.print(f"{self.text} = {sp.solve(expr)}")
+                    self.console.print(f"{self.text} = {sp.solve(expr)}")
                 else:
                     self.type = "implicit"
                     self.legal = True
