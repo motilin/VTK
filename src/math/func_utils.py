@@ -149,7 +149,7 @@ class Func:
                 elif diff == 1:
                     self.type = "single"
                     self.legal = False
-                    self.console.print(f"{self.text} = {sp.solve(expr)}")
+                    self.console.print(f"{self.text} = {expr}")
                 else:
                     self.type = "implicit"
                     self.legal = True

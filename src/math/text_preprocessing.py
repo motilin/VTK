@@ -7,6 +7,8 @@ TERMS_DICT = {
     "norm": ".norm()",
 }
 
+EXCEPTION_LIST = ["integrate", "diff"]
+
 
 def is_valid_tuple_start(input_string, index):
     """
@@ -168,6 +170,10 @@ def preprocess_text(input_string):
     """
     if not input_string or not isinstance(input_string, str):
         return input_string
+    
+    for exception in EXCEPTION_LIST:
+        if exception in input_string:
+            return input_string
 
     changed = True
     while changed:
