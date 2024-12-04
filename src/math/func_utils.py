@@ -1,4 +1,4 @@
-import re, copy, vtk
+import re, copy, vtk, rich
 import numpy as np
 from numpy import (
     sin,
@@ -135,8 +135,18 @@ class Func:
             elif isinstance(expr, sp.Basic):
                 x, y, z = sp.symbols("x y z")
                 self.coeffs = expr.free_symbols - {x, y, z}
-                self.type = "implicit"
-                self.legal = True
+                diff = len(expr.free_symbols) - len(self.coeffs)
+                if diff == 0:
+                    self.type = "number"
+                    self.legal = False
+                    rich.print(f"{self.text} = {expr.evalf()}") # type: ignore
+                elif diff == 1:
+                    self.type = "single"
+                    self.legal = False
+                    rich.print(f"{self.text} = {sp.solve(expr)}")
+                else:
+                    self.type = "implicit"
+                    self.legal = True
 
             else:
                 self.legal = False
