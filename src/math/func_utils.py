@@ -1,5 +1,6 @@
 import re, copy, vtk
 from rich.console import Console
+from rich.markdown import Markdown
 import numpy as np
 from numpy import (
     sin,
@@ -44,15 +45,8 @@ from src.utils.line_utils import (
 )
 import sympy as sp
 from sympy.matrices import MatrixBase, ImmutableDenseMatrix
-from sympy.parsing.sympy_parser import (
-    parse_expr,
-    standard_transformations,
-    implicit_multiplication_application,
-    convert_xor,
-    function_exponentiation,
-    split_symbols,
-)
-from src.math.text_preprocessing import preprocess_text
+
+from src.math.text_preprocessing import parse
 
 
 class Func:
@@ -81,12 +75,6 @@ class Func:
         self.type = None
         self.show_surface = True
         self.show_lines = True
-        self.transformations = standard_transformations + (
-            implicit_multiplication_application,
-            convert_xor,
-            function_exponentiation,
-            split_symbols,
-        )
         self.func = sp.Basic()
         self.coeffs = set()
         self.surface_actor = None
@@ -100,14 +88,9 @@ class Func:
                 self.console.print(":arrow_forward:")
                 self.legal = False
                 return
-            preprocessed_text = preprocess_text(self.text)
-            try:
-                expr = parse_expr(
-                    preprocessed_text,
-                    transformations=self.transformations,
-                )
-            except Exception as e:
-                print(f"Error parsing expression: {e}")
+            expr = parse(self.text)
+            if not expr:
+                self.legal = False
                 return
             if isinstance(expr, sp.Equality):
                 expr = sp.simplify(expr.lhs) - sp.simplify(expr.rhs)
@@ -125,6 +108,7 @@ class Func:
                         self.coeffs = all_symbols - {t}
                         self.type = "parametric-1"
                         self.legal = True
+                        # self.reparametrize()
                     elif u in all_symbols and v in all_symbols and t not in all_symbols:
                         self.coeffs = all_symbols - {u, v}
                         self.type = "parametric-2"
@@ -164,6 +148,19 @@ class Func:
         except Exception as e:
             print(e)
             self.legal = False
+    
+    def reparametrize(self):
+        try:
+            # parametrize the curve with respect to arc length
+            speed = sp.diff(self.func, sp.symbols("t")).norm() # type: ignore
+            t, s = sp.symbols("t s")
+            arc_length_func = sp.integrate(speed, (t, 0, t))
+            t_arc_length = sp.simplify(sp.solve(arc_length_func - s, t)[0])
+            reparametrized = self.func.subs(t, t_arc_length)
+            reparametrized = sp.pretty(reparametrized)
+            self.console.print(f"{self.text} reparametrized:\n{reparametrized}")
+        except Exception as e:
+            print("Error reparametrizing: ", e)
 
     def update_render(self, widget):
         if not self.legal:
