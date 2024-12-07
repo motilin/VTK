@@ -34,7 +34,7 @@ def curvature(vector):
     t = symbols("t")
     if t not in vector.free_symbols:
         raise ValueError("k() expects a vector with a free variable t")
-    
+
     v1 = vector.diff(t)
     v2 = v1.diff(t)
     k = v1.cross(v2).norm() / v1.norm() ** 3
@@ -45,33 +45,11 @@ def curvature(vector):
 CUSTOM_FUNCTIONS = {"m": m, "curvature": curvature}
 
 
-def preprocess_implicit_multiplication2(expr_str):
+def preprocess_implicit_multiplication(expr_str):
     """
     Preprocess expression to handle implicit multiplication.
     For instance, convert "2x" to "2*x", "2(x+1)" to "2*(x+1)", "2sin(x)" to "2*sin(x)" or "a b c" to "a*b*c".
     Leaves alone expressions such as "func(1,2,3)" or "abc" that may represent function calls or variable names.
-
-    Args:
-        expr_str (str): The original expression string
-
-    Returns:
-        str: Expression with implicit multiplication made explicit
-    """
-    pass
-
-
-import re
-
-
-def preprocess_implicit_multiplication(expr_str):
-    """
-    Preprocess expression to handle implicit multiplication.
-
-    Rules:
-    1. Add '*' between space-separated alphanumeric chars
-    2. Add '*' between number and character
-    3. Add '*' between number and opening parenthesis
-    4. Add '*' between closing parenthesis and number
 
     Args:
         expr_str (str): The original expression string
@@ -89,21 +67,14 @@ def preprocess_implicit_multiplication(expr_str):
     patterns = [
         # Space between alphanumeric tokens: "a b c" -> "a*b*c"
         (r"([a-zA-Z0-9])\s+([a-zA-Z0-9])", r"\1*\2"),
-        
         # Number followed by letter: "2x" -> "2*x"
         (r"(\d+)([a-zA-Z])", r"\1*\2"),
-        
         # Letter preceded by number: "x2" -> "x*2"
         (r"([a-zA-Z])(\d+)", r"\1*\2"),
-        
-        # Number followed by opening parenthesis: "2(x+1)" -> "2*(x+1)"
-        (r"(\d+)(\()", r"\1*\2"),
-        
         # Closing parenthesis followed by an alphanumeric token: "(x+1) 2" -> "(x+1)*2"
         (r"(\))\s*([a-zA-Z0-9])", r"\1*\2"),
-        
-        # Letter followed by opening parenthesis with whitespace: "x (y+1)" -> "x*(y+1)"
-        (r"([a-zA-Z])\s+(\()", r"\1*\2"),
+        # Alphanumeric token followed by opening parenthesis with whitespace: "x (y+1)" -> "x*(y+1)"
+        (r"([a-zA-Z0-9])\s+(\()", r"\1*\2"),
     ]
 
     # Apply each pattern sequentially
