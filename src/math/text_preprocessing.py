@@ -1,7 +1,4 @@
-import ast
-import astor
-import rich
-import sympy as sp
+import re, ast, astor, rich, sympy as sp
 from sympy import symbols, Matrix
 from sympy.parsing.sympy_parser import (
     parse_expr,
@@ -49,6 +46,74 @@ def curvature(vector):
 CUSTOM_FUNCTIONS = {"m": m, "curvature": curvature}
 
 
+def preprocess_implicit_multiplication2(expr_str):
+    """
+    Preprocess expression to handle implicit multiplication.
+    For instance, convert "2x" to "2*x", "2(x+1)" to "2*(x+1)", "2sin(x)" to "2*sin(x)" or "a b c" to "a*b*c".
+    Leaves alone expressions such as "func(1,2,3)" or "abc" that may represent function calls or variable names.
+
+    Args:
+        expr_str (str): The original expression string
+
+    Returns:
+        str: Expression with implicit multiplication made explicit
+    """
+    pass
+
+
+import re
+
+
+def preprocess_implicit_multiplication(expr_str):
+    """
+    Preprocess expression to handle implicit multiplication.
+
+    Rules:
+    1. Add '*' between space-separated alphanumeric chars
+    2. Add '*' between number and character
+    3. Add '*' between number and opening parenthesis
+    4. Add '*' between closing parenthesis and number
+
+    Args:
+        expr_str (str): The original expression string
+    Returns:
+        str: Expression with implicit multiplication made explicit
+    """
+    # Trim whitespace
+    expr_str = expr_str.strip()
+
+    # Skip if empty string
+    if not expr_str:
+        return expr_str
+
+    # Rules for implicit multiplication
+    patterns = [
+        # Space between alphanumeric tokens: "a b c" -> "a*b*c"
+        (r"([a-zA-Z0-9])\s+([a-zA-Z0-9])", r"\1*\2"),
+        
+        # Number followed by letter: "2x" -> "2*x"
+        (r"(\d+)([a-zA-Z])", r"\1*\2"),
+        
+        # Letter preceded by number: "x2" -> "x*2"
+        (r"([a-zA-Z])(\d+)", r"\1*\2"),
+        
+        # Number followed by opening parenthesis: "2(x+1)" -> "2*(x+1)"
+        (r"(\d+)(\()", r"\1*\2"),
+        
+        # Closing parenthesis followed by an alphanumeric token: "(x+1) 2" -> "(x+1)*2"
+        (r"(\))\s*([a-zA-Z0-9])", r"\1*\2"),
+        
+        # Letter followed by opening parenthesis with whitespace: "x (y+1)" -> "x*(y+1)"
+        (r"([a-zA-Z])\s+(\()", r"\1*\2"),
+    ]
+
+    # Apply each pattern sequentially
+    for pattern, repl in patterns:
+        expr_str = re.sub(pattern, repl, expr_str)
+
+    return expr_str
+
+
 def transform_func_calls(expr_str, custom_funcs):
     """
     Transform custom function calls in an expression string using AST.
@@ -60,6 +125,8 @@ def transform_func_calls(expr_str, custom_funcs):
     Returns:
         str: Transformed expression string with function calls evaluated
     """
+
+    expr_str = preprocess_implicit_multiplication(expr_str)
 
     class FuncCallTransformer(ast.NodeTransformer):
         def visit_Call(self, node):
