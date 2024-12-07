@@ -548,7 +548,7 @@ class PlotFunc(QWidget):
             func = Func("")
             func.unmarshalize(func_data)
             self.functions.append(func)
-            self.func_names.append(func.str)
+            self.func_names.append(func.text)
         self.func_input_textbox.setText("\n".join(self.func_names))
         self.update_coeff_sliders()
         self.control_widget.update_dropdown(self.func_dropdown, self.func_names)

@@ -80,7 +80,6 @@ class Func:
         self.surface_actor = None
         self.lines_actor = None
         self.console = Console()
-        self.str = ""
         self.parse_function()
 
     def parse_function(self):
