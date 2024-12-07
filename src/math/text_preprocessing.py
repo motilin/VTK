@@ -1,5 +1,5 @@
 import re, ast, astor, rich, sympy as sp
-from sympy import symbols, Matrix
+from sympy import symbols, Matrix, Abs, simplify
 from sympy.parsing.sympy_parser import (
     parse_expr,
     standard_transformations,
@@ -19,6 +19,64 @@ TRANSFORMATIONS = standard_transformations + (
 ### Custom functions
 
 
+def is_legal_1d_vector(vector):
+    if not isinstance(vector, Matrix) and vector.shape[0] != 3:
+        return False
+    t = symbols("t")
+    if t not in vector.free_symbols:
+        return False
+    return True
+
+
+def remove_abs(expr):
+    def _remove_abs_recursively(e):
+        # Handle basic types and atomic expressions
+        if not hasattr(e, "func") or not hasattr(e, "args"):
+            return e
+
+        # Special handling for Abs
+        if e.func == Abs:
+            return _remove_abs_recursively(e.args[0])
+
+        # Recursive handling of arguments
+        try:
+            new_args = [_remove_abs_recursively(arg) for arg in e.args]
+            return e.func(*new_args)
+        except Exception:
+            # Fallback if argument reconstruction fails
+            return e
+
+    # Apply recursive removal
+    try:
+        # First, remove Abs
+        expr_without_abs = _remove_abs_recursively(expr)
+
+        # Then simplify with real assumptions
+        t = symbols("t", real=True)
+        expr_without_abs = simplify(expr_without_abs)
+
+        return expr_without_abs
+    except Exception as ex:
+        print(f"Error in remove_abs: {ex}")
+        return expr
+
+
+def remove_abs_vector(vector):
+    no_abs = [remove_abs(v) for v in vector]
+    simplified = [v.simplify() for v in no_abs]
+    return Matrix(simplified)
+
+
+def diff_1d_vector(vector):
+    t = symbols("t")
+    preprocessed = remove_abs_vector(vector)
+    differentiated = [v.diff(t) for v in preprocessed] # type: ignore
+    no_abs = remove_abs_vector(differentiated)
+    expaneded = [v.expand() for v in no_abs] # type: ignore
+    simplified = [v.simplify() for v in expaneded]
+    return Matrix(simplified)
+
+
 # Define a vector
 def m(*args):
     return Matrix(args)
@@ -26,20 +84,50 @@ def m(*args):
 
 # Create a curvature function
 def curvature(vector):
-    if not isinstance(vector, Matrix):
-        raise ValueError("k() expects a Matrix")
-    if vector.shape[0] != 3:
-        raise ValueError("k() expects a 3D vector")
-
+    if not is_legal_1d_vector(vector):
+        raise ValueError("Invalid vector in curvature()")
     t = symbols("t")
-    if t not in vector.free_symbols:
-        raise ValueError("k() expects a vector with a free variable t")
-
     v1 = vector.diff(t)
     v2 = v1.diff(t)
     k = v1.cross(v2).norm() / v1.norm() ** 3
     rich.print(f"k = {sp.sstr(k.simplify())}")
     return Matrix([t, k, 0])
+
+
+def T(vector):
+    if not is_legal_1d_vector(vector):
+        raise ValueError("Invalid vector in T()")
+    dv = diff_1d_vector(vector)
+    T = dv / dv.norm()
+    T = remove_abs_vector(T)
+    rich.print(f"T(t) = {sp.sstr(T)}")
+    return T
+
+
+def N(vector):
+    if not is_legal_1d_vector(vector):
+        raise ValueError("Invalid vector in N()")
+    dv = diff_1d_vector(vector)
+    T = dv / dv.norm()
+    dT = diff_1d_vector(T)
+    N = dT / dT.norm()
+    N = remove_abs_vector(N)
+    rich.print(f"N(t) = {sp.sstr(N)}")
+    return N
+
+
+def B(vector):
+    if not is_legal_1d_vector(vector):
+        raise ValueError("Invalid vector in B()")
+    t = symbols("t")
+    dv = diff_1d_vector(vector)
+    T = dv / dv.norm()
+    dT = diff_1d_vector(T)
+    N = dT / dT.norm()
+    N = remove_abs_vector(N)
+    B = T.cross(N)
+    rich.print(f"B(t) = {sp.sstr(B)}")
+    return B
 
 
 CUSTOM_FUNCTIONS = {"m": m, "curvature": curvature}
