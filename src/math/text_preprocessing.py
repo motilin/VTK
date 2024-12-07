@@ -130,7 +130,7 @@ def B(vector):
     return B
 
 
-CUSTOM_FUNCTIONS = {"m": m, "curvature": curvature}
+CUSTOM_FUNCTIONS = {"m": m, "curvature": curvature, "T": T, "N": N, "B": B}
 
 
 def preprocess_implicit_multiplication(expr_str):
