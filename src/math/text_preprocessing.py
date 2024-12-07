@@ -35,12 +35,10 @@ def curvature(vector):
     if t not in vector.free_symbols:
         raise ValueError("k() expects a vector with a free variable t")
     
-    vector = Matrix([t*sp.exp(t), sp.exp(-t), sp.sqrt(2)*t])
-
     v1 = vector.diff(t)
     v2 = v1.diff(t)
     k = v1.cross(v2).norm() / v1.norm() ** 3
-    rich.print(f"k = {str(k.simplify())}")
+    rich.print(f"k = {sp.sstr(k.simplify())}")
     return Matrix([t, k, 0])
 
 
