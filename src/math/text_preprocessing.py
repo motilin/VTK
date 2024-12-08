@@ -28,6 +28,25 @@ def is_legal_1d_vector(vector):
     return True
 
 
+# Define a vector
+def m(*args):
+    return Matrix(args)
+
+
+def norm(vector):
+    t = symbols("t")
+    norm = 0
+    for i in range(len(vector)):
+        norm += vector[i] ** 2
+        norm = norm.simplify()
+    return (norm**0.5).simplify()
+
+
+def simplify_vector(vector):
+    t = symbols("t")
+    return Matrix([v.simplify() for v in vector])
+
+
 def remove_abs(expr):
     def _remove_abs_recursively(e):
         # Handle basic types and atomic expressions
@@ -67,21 +86,6 @@ def remove_abs_vector(vector):
     return Matrix(simplified)
 
 
-def diff_1d_vector(vector):
-    t = symbols("t")
-    preprocessed = remove_abs_vector(vector)
-    differentiated = [v.diff(t) for v in preprocessed] # type: ignore
-    no_abs = remove_abs_vector(differentiated)
-    expaneded = [v.expand() for v in no_abs] # type: ignore
-    simplified = [v.simplify() for v in expaneded]
-    return Matrix(simplified)
-
-
-# Define a vector
-def m(*args):
-    return Matrix(args)
-
-
 # Create a curvature function
 def curvature(vector):
     if not is_legal_1d_vector(vector):
@@ -94,43 +98,58 @@ def curvature(vector):
     return Matrix([t, k, 0])
 
 
-def T(vector):
-    if not is_legal_1d_vector(vector):
+def T(r):
+    if not is_legal_1d_vector(r):
         raise ValueError("Invalid vector in T()")
-    dv = diff_1d_vector(vector)
-    T = dv / dv.norm()
+    t = symbols("t")
+    dr = r.diff(t)
+    T = dr / norm(dr)
     T = remove_abs_vector(T)
+    T = simplify_vector(T)
     rich.print(f"T(t) = {sp.sstr(T)}")
     return T
 
 
-def N(vector):
-    if not is_legal_1d_vector(vector):
+def N(r):
+    if not is_legal_1d_vector(r):
         raise ValueError("Invalid vector in N()")
-    dv = diff_1d_vector(vector)
-    T = dv / dv.norm()
-    dT = diff_1d_vector(T)
+    t = symbols("t")
+    dr = r.diff(t)
+    T = dr / norm(dr)
+    dT = T.diff(t)
     N = dT / dT.norm()
     N = remove_abs_vector(N)
+    N = simplify_vector(N)
     rich.print(f"N(t) = {sp.sstr(N)}")
     return N
 
 
-def B(vector):
-    if not is_legal_1d_vector(vector):
+def B(r):
+    if not is_legal_1d_vector(r):
         raise ValueError("Invalid vector in B()")
     t = symbols("t")
-    dv = diff_1d_vector(vector)
-    T = dv / dv.norm()
-    dT = diff_1d_vector(T)
-    N = dT / dT.norm()
+    dr = r.diff(t)
+    T = dr / norm(dr)
+    dT = T.diff(t)
+    N = dT / norm(dT)
+    T = remove_abs_vector(T)
+    T = simplify_vector(T)
     N = remove_abs_vector(N)
+    N = simplify_vector(N)
     B = T.cross(N)
+    B = simplify_vector(B)
     rich.print(f"B(t) = {sp.sstr(B)}")
     return B
 
 
-CUSTOM_FUNCTIONS = {"m": m, "curvature": curvature, "T": T, "N": N, "B": B}
+CUSTOM_FUNCTIONS = {
+    "m": m,
+    "curvature": curvature,
+    "T": T,
+    "N": N,
+    "B": B,
+    "norm": norm,
+}
 
 
 def preprocess_implicit_multiplication(expr_str):
