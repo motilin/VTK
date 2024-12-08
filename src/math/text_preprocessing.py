@@ -91,8 +91,8 @@ def curvature(vector):
     if not is_legal_1d_vector(vector):
         raise ValueError("Invalid vector in curvature()")
     t = symbols("t")
-    v1 = vector.diff(t).simplify()
-    v2 = v1.diff(t).simplify()
+    v1 = simplify_vector(vector.diff(t))
+    v2 = simplify_vector(v1.diff(t))
     k = v1.cross(v2).norm() / v1.norm() ** 3
     rich.print(f"k = {sp.sstr(k.simplify())}")
     return Matrix([t, k, 0])
@@ -102,7 +102,7 @@ def T(r):
     if not is_legal_1d_vector(r):
         raise ValueError("Invalid vector in T()")
     t = symbols("t")
-    dr = r.diff(t).simplify()
+    dr = simplify_vector(r.diff(t))
     T = dr / norm(dr)
     T = remove_abs_vector(T)
     T = simplify_vector(T)
@@ -114,9 +114,9 @@ def N(r):
     if not is_legal_1d_vector(r):
         raise ValueError("Invalid vector in N()")
     t = symbols("t")
-    dr = r.diff(t).simplify()
+    dr = simplify_vector(r.diff(t))
     T = dr / norm(dr)
-    dT = T.diff(t).simplify()
+    dT = simplify_vector(T.diff(t))
     N = dT / dT.norm()
     N = remove_abs_vector(N)
     N = simplify_vector(N)
@@ -128,9 +128,9 @@ def B(r):
     if not is_legal_1d_vector(r):
         raise ValueError("Invalid vector in B()")
     t = symbols("t")
-    dr = r.diff(t).simplify()
+    dr = simplify_vector(r.diff(t))
     T = dr / norm(dr)
-    dT = T.diff(t).simplify()
+    dT = simplify_vector(T.diff(t))
     N = dT / norm(dT)
     T = remove_abs_vector(T)
     T = simplify_vector(T)
