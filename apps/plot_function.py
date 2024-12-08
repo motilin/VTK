@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, copy
 import sympy as sp
 
 # Dynamically set PYTHONPATH in .env
@@ -472,12 +472,17 @@ class PlotFunc(QWidget):
             )
 
     def handle_function_input(self, text):
+        old_func_names = copy.deepcopy(self.func_names)
         self.func_names = []
         self.active_func = None
         new_functions = []
 
         # Parse the input text and create a Func object for each function
         for func_text in text.split("\n"):
+            if func_text in old_func_names:
+                new_functions.append(self.functions[old_func_names.index(func_text)])
+                self.func_names.append(func_text)
+                continue
             func = Func(func_text.strip())
             if func.legal and func not in new_functions:
                 self.func_names.append(func.str)

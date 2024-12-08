@@ -44,7 +44,8 @@ def norm(vector):
 
 def simplify_vector(vector):
     t = symbols("t")
-    return Matrix([v.simplify() for v in vector])
+    vector = remove_abs_vector(vector)
+    return Matrix([v.simplify() for v in vector]) # type: ignore
 
 
 def remove_abs(expr):
@@ -87,13 +88,15 @@ def remove_abs_vector(vector):
 
 
 # Create a curvature function
-def curvature(vector):
-    if not is_legal_1d_vector(vector):
+def curvature(r):
+    if not is_legal_1d_vector(r):
         raise ValueError("Invalid vector in curvature()")
     t = symbols("t")
-    v1 = simplify_vector(vector.diff(t))
-    v2 = simplify_vector(v1.diff(t))
-    k = v1.cross(v2).norm() / v1.norm() ** 3
+    dr = r.diff(t)
+    dr = simplify_vector(dr)
+    d2r = dr.diff(t)
+    d2r = simplify_vector(d2r)
+    k = norm(dr.cross(d2r)) / norm(dr) ** 3
     rich.print(f"k = {sp.sstr(k.simplify())}")
     return Matrix([t, k, 0])
 
@@ -103,10 +106,7 @@ def T(r):
         raise ValueError("Invalid vector in T()")
     t = symbols("t")
     dr = simplify_vector(r.diff(t))
-    T = dr / norm(dr)
-    T = remove_abs_vector(T)
-    T = simplify_vector(T)
-    rich.print(f"T(t) = {sp.sstr(T)}")
+    T = simplify_vector(dr / norm(dr))
     return T
 
 
@@ -115,12 +115,9 @@ def N(r):
         raise ValueError("Invalid vector in N()")
     t = symbols("t")
     dr = simplify_vector(r.diff(t))
-    T = dr / norm(dr)
+    T = simplify_vector(dr / norm(dr))
     dT = simplify_vector(T.diff(t))
-    N = dT / dT.norm()
-    N = remove_abs_vector(N)
-    N = simplify_vector(N)
-    rich.print(f"N(t) = {sp.sstr(N)}")
+    N = simplify_vector(dT / norm(dT))
     return N
 
 
@@ -129,26 +126,45 @@ def B(r):
         raise ValueError("Invalid vector in B()")
     t = symbols("t")
     dr = simplify_vector(r.diff(t))
-    T = dr / norm(dr)
+    T = simplify_vector(dr / norm(dr))
     dT = simplify_vector(T.diff(t))
-    N = dT / norm(dT)
-    T = remove_abs_vector(T)
-    T = simplify_vector(T)
-    N = remove_abs_vector(N)
-    N = simplify_vector(N)
-    B = T.cross(N)
-    B = simplify_vector(B)
-    rich.print(f"B(t) = {sp.sstr(B)}")
+    N = simplify_vector(dT / norm(dT))
+    B = simplify_vector(T.cross(N))
     return B
+
+
+def osculating_circle(r, a):
+    if not is_legal_1d_vector(r):
+        raise ValueError("Invalid vector in osculating_circle()")
+    try:
+        a = symbols(str(a))
+    except:
+        raise ValueError("Invalid variable name in osculating_circle()")
+    t = symbols("t")
+    dr = simplify_vector(r.diff(t))
+    T = simplify_vector(dr / norm(dr))
+    dT = simplify_vector(T.diff(t))
+    N = simplify_vector(dT / norm(dT))
+    k = (norm(dT) / norm(dr)).simplify()
+    rich.print(f"k = {sp.sstr(k)}")
+    k = k.subs(t, a)
+    T = T.subs(t, a)
+    N = N.subs(t, a)
+    pos = r.subs(t, a)
+    center = pos + N / k
+    return center + (sp.cos(t) * T + sp.sin(t) * N) / k
 
 
 CUSTOM_FUNCTIONS = {
     "m": m,
+    "curv": curvature,
     "curvature": curvature,
     "T": T,
     "N": N,
     "B": B,
     "norm": norm,
+    "osc_circ": osculating_circle,
+    "osculating_circle": osculating_circle,
 }
 
 
@@ -274,5 +290,3 @@ if __name__ == "__main__":
     print(parse("func(1,2,3)"))  # Should print 6
     print(parse("func(1+2, 3*4, 5**2)"))  # More complex example
     print(parse("x + func(1,2,3)"))  # Mixed expression
-
-

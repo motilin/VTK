@@ -148,11 +148,11 @@ class Func:
         except Exception as e:
             print(e)
             self.legal = False
-    
+
     def reparametrize(self):
         try:
             # parametrize the curve with respect to arc length
-            speed = sp.diff(self.func, sp.symbols("t")).norm() # type: ignore
+            speed = sp.diff(self.func, sp.symbols("t")).norm()  # type: ignore
             t, s = sp.symbols("t s")
             arc_length_func = sp.integrate(speed, (t, 0, t))
             t_arc_length = sp.simplify(sp.solve(arc_length_func - s, t)[0])
@@ -354,6 +354,8 @@ class Func:
 
     def __eq__(self, other):
         if isinstance(other, Func):
+            if self.text and other.text and self.text.strip() == other.text.strip():
+                return True
             if self.type == "implicit" and other.type == "implicit":
                 func1 = sp.simplify(sp.expand(self.func))
                 func2 = sp.simplify(sp.expand(other.func))
@@ -362,7 +364,8 @@ class Func:
                 other.func, MatrixBase
             ):
                 if (
-                    not sp.simplify(self.func - other.func) == sp.Matrix([0, 0, 0])
+                    # not sp.simplify(self.func - other.func) == sp.Matrix([0, 0, 0])
+                    not self.func == other.func
                     and not self.str.strip() == other.str.strip()
                 ):
                     return False
