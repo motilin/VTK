@@ -45,7 +45,7 @@ def norm(vector):
 def simplify_vector(vector):
     t = symbols("t")
     vector = remove_abs_vector(vector)
-    return Matrix([v.simplify() for v in vector]) # type: ignore
+    return Matrix([v.simplify() for v in vector])  # type: ignore
 
 
 def remove_abs(expr):
@@ -155,6 +155,19 @@ def osculating_circle(r, a):
     return center + (sp.cos(t) * T + sp.sin(t) * N) / k
 
 
+def torsion(r):
+    if not is_legal_1d_vector(r):
+        raise ValueError("Invalid vector in torsion()")
+    t = symbols("t")
+    dr = simplify_vector(r.diff(t))
+    d2r = simplify_vector(dr.diff(t))
+    d3r = simplify_vector(d2r.diff(t))
+    torsion = (dr.cross(d2r)).dot(d3r) / (norm(dr.cross(d2r)) ** 2)
+    torsion = torsion.simplify()
+    rich.print(f"torsion = {sp.sstr(torsion)}")
+    return Matrix([t, torsion.simplify(), 0])
+
+
 CUSTOM_FUNCTIONS = {
     "m": m,
     "curv": curvature,
@@ -165,6 +178,7 @@ CUSTOM_FUNCTIONS = {
     "norm": norm,
     "osc_circ": osculating_circle,
     "osculating_circle": osculating_circle,
+    "torsion": torsion,
 }
 
 
