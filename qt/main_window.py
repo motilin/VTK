@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt
 import sys, logging, vtk
 from src.core.interactor import (
     set_mathematical_view,
+    set_mathematical_2d_view,
     export_to_obj,
     export_to_png,
     export_to_html,
@@ -49,6 +50,9 @@ class VTKMainWindow(QMainWindow):
 
         reset_view_shortcut = QShortcut(QKeySequence(Qt.Key_R), self)
         reset_view_shortcut.activated.connect(self.reset_mathematical_view)
+        
+        set_2d_view_shortcut = QShortcut(QKeySequence(Qt.Key_X), self)
+        set_2d_view_shortcut.activated.connect(self.set_2d_view)
 
         # export_obj_shortcut = QShortcut(QKeySequence(Qt.Key_O), self)
         # export_obj_shortcut.activated.connect(self.export_obj)
@@ -74,6 +78,13 @@ class VTKMainWindow(QMainWindow):
             self.widget.vtk_widget.get_render_window().Render()
         else:
             logging.warning("No renderer found, cannot reset view")
+            
+    def set_2d_view(self):
+        if hasattr(self.widget.vtk_widget, "renderer") and self.widget.vtk_widget.renderer:
+            set_mathematical_2d_view(self.widget.vtk_widget.renderer)
+            self.widget.vtk_widget.get_render_window().Render()
+        else:
+            logging.warning("No renderer found, cannot set 2 view")
 
     def export_obj(self, filename):
         export_to_obj(self.widget.vtk_widget, "output")

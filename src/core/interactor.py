@@ -66,6 +66,40 @@ def set_mathematical_view(renderer):
     renderer.ResetCamera()
 
 
+def set_mathematical_2d_view(renderer):
+    """
+    Sets up a classic 2D mathematical Cartesian view where:
+    - X axis points right
+    - Y axis points up
+    - Z axis points towards the viewer
+    - View is perfectly leveled for optimal 2D visualization
+
+    Parameters:
+    -----------
+    renderer : vtkRenderer
+        The renderer whose camera will be transformed to 2D view
+    """
+    # Get the camera
+    camera = renderer.GetActiveCamera()
+
+    # Set camera for a pure 2D orthographic projection
+    camera.SetParallelProjection(True)  # Use orthographic projection
+
+    # Position camera directly above the origin, looking down
+    camera.SetPosition(0, 0, 1)  # Z axis pointing towards viewer
+    camera.SetFocalPoint(0, 0, 0)  # Look at the origin
+    camera.SetViewUp(0, 1, 0)  # Y axis points up
+
+    # Adjust camera to ensure perfect 2D view
+    camera.SetClippingRange(0.1, 10)  # Minimal clipping range for 2D
+
+    # Reset the camera to fit all actors, but prevent any rotation
+    renderer.ResetCamera()
+
+    # Optional: Adjust parallel scale to ensure good fit
+    camera.SetParallelScale(10)  # Can be adjusted based on your specific scene
+
+
 def export_to_obj(widget, filepath):
     """
     Exports the current view of the renderer to an OBJ file.
@@ -154,6 +188,7 @@ def load_state(main_widget, filepath):
 
 
 # Currently not working
+
 
 def export_to_html(vtk_widget, output_path, title="VTK Visualization"):
     """
