@@ -293,6 +293,7 @@ def parse(expr_str):
             transformations=TRANSFORMATIONS,
         )
     except Exception as e:
+        print(f"Received: {transformed_expr}")
         print(f"Error parsing expression: {e}")
         return None
 

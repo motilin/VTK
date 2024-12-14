@@ -96,8 +96,8 @@ def set_mathematical_2d_view(renderer):
     # Reset the camera to fit all actors, but prevent any rotation
     renderer.ResetCamera()
 
-    # Optional: Adjust parallel scale to ensure good fit
-    camera.SetParallelScale(10)  # Can be adjusted based on your specific scene
+    # Adjust parallel scale to ensure good fit
+    camera.SetParallelScale(8)  # Can be adjusted based on your specific scene
 
 
 def export_to_obj(widget, filepath):
