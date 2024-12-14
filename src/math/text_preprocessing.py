@@ -10,7 +10,7 @@ from sympy.parsing.sympy_parser import (
 )
 
 TRANSFORMATIONS = standard_transformations + (
-    implicit_multiplication_application,
+    # implicit_multiplication_application,
     convert_xor,
     function_exponentiation,
     split_symbols,
@@ -293,15 +293,14 @@ def parse(expr_str):
             transformations=TRANSFORMATIONS,
         )
     except Exception as e:
-        print(f"Received: {transformed_expr}")
-        print(f"Error parsing expression: {e}")
-        return None
+        try:
+            expr = parse_expr(
+                transformed_expr,
+                transformations=TRANSFORMATIONS + (implicit_multiplication_application,),
+            )
+        except Exception:
+            print(transformed_expr)
+            print(f"Error parsing expression: {e}")
+            return None
 
     return expr
-
-
-if __name__ == "__main__":
-    # Test cases
-    print(parse("func(1,2,3)"))  # Should print 6
-    print(parse("func(1+2, 3*4, 5**2)"))  # More complex example
-    print(parse("x + func(1,2,3)"))  # Mixed expression
