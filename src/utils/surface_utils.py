@@ -246,9 +246,9 @@ def create_parametric_func_surface_actor(
         second_derivatives = np.diff(derivatives, axis=0) / dp
 
         # Estimate required samples based on maximum curvature
-        max_curvature = np.max(np.abs(second_derivatives))
+        max_curvature = np.nanmax(np.abs(second_derivatives))
 
-        if max_curvature < 1e-6:
+        if not max_curvature or np.isnan(max_curvature) or max_curvature < 1e-6:
             return min_samples
 
         suggested_samples = int(
