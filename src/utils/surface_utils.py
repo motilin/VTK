@@ -444,3 +444,80 @@ def create_point_actor(
     actor.GetProperty().SetSpecularPower(20)
 
     return actor
+
+
+def detect_domain_boundary(
+    parametric_function,
+    u_range=(0, 1),
+    v_range=(0, 1),
+    test_samples=100,
+    error_threshold=1e-6,
+):
+    """
+    Automatically detect the domain boundary of a parametric function.
+
+    Args:
+        parametric_function: Function that takes (U, V) and returns (X, Y, Z)
+        u_range: Range of u parameter
+        v_range: Range of v parameter
+        test_samples: Number of samples to test
+        error_threshold: Threshold for detecting invalid computations
+
+    Returns:
+        domain_boundary_func: A function that checks if a point is within the valid domain
+    """
+
+    def is_valid_point(u, v):
+        try:
+            X, Y, Z = parametric_function(np.array([u]), np.array([v]))
+
+            # Check for NaN or infinite values
+            if (
+                np.isnan(X).any()
+                or np.isnan(Y).any()
+                or np.isnan(Z).any()
+                or np.isinf(X).any()
+                or np.isinf(Y).any()
+                or np.isinf(Z).any()
+            ):
+                return False
+
+            return True
+        except Exception:
+            return False
+
+    # Create a grid of test points
+    u_test = np.linspace(u_range[0], u_range[1], test_samples)
+    v_test = np.linspace(v_range[0], v_range[1], test_samples)
+
+    # Track valid and invalid regions
+    valid_points = []
+    for u in u_test:
+        for v in v_test:
+            if is_valid_point(u, v):
+                valid_points.append((u, v))
+
+    # If no method is apparent, fall back to testing points
+    if not valid_points:
+
+        def default_domain_boundary(u, v):
+            return (u_range[0] <= u <= u_range[1]) and (v_range[0] <= v <= v_range[1])
+
+        return default_domain_boundary
+
+    # Advanced detection: Try to find a geometric pattern
+    u_vals, v_vals = zip(*valid_points)
+
+    # Check for circular/elliptical domain
+    u_center = np.mean(u_vals)
+    v_center = np.mean(v_vals)
+    u_radius = np.std(u_vals) * 2
+    v_radius = np.std(v_vals) * 2
+
+    def domain_boundary(u, v):
+        # Elliptical boundary check
+        u_dist = ((u - u_center) / u_radius) ** 2
+        v_dist = ((v - v_center) / v_radius) ** 2
+        return u_dist + v_dist <= 1.0
+
+    return domain_boundary
