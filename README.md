@@ -41,22 +41,22 @@ A 3D visualization tool for mathematical objects including implicit surfaces, pa
 
 ### Mathematical Operations
 
-The tool includes several built-in mathematical functions for differential geometry:
+The tool includes several built-in mathematical functions for differential geometry. 'r' refers to a vector created using the first helper function.
 
-- `curvature(r)`: Computes the curvature of a parametric curve
+- `m(a, b, c)`: Helper function for creating 3D vectors.
+- `norm(r)`: Computes the norm of a vector
 - `T(r)`: Tangent vector field
 - `N(r)`: Normal vector field
 - `B(r)`: Binormal vector field
+- `curvature(r)`: Computes the curvature of a parametric curve
 - `torsion(r)`: Computes the torsion of a parametric curve
 - `osculating_circle(r, a)`: Generates the osculating circle at parameter value a
-- `norm(vector)`: Computes the norm of a vector
-- `m(x, y, z)`: Helper function for creating 3D vectors
 
 ## Input Format
 
 ### Vector Input
 ```python
-m(x, y, z)  # Creates a 3D vector [x, y, z]
+m(a, b, c)  # Creates a 3D vector [x, y, z]
 ```
 
 ### Parametric Curves
@@ -87,7 +87,7 @@ m(u*cos(v), u*sin(v), v)  # Helicoid
 
 ## Error Handling
 
-The application includes error handling for:
+The application includes robust error handling for:
 - Invalid mathematical expressions
 - Complex number results
 - Non-real outputs
@@ -150,63 +150,71 @@ To run the application, execute the following command:
 python plot_function.py
 ```
 
+## Keyboard Shortcuts
+
+- **/**: Focus the input box
+- **R**: Reset to the mathematical view
+- **X**: Set to 2D view
+- **J**: Rotate the scene upward
+- **K**: Rotate the scene downward
+- **L**: Rotate the scene clockwise
+- **H**: Rotate the scene counterclockwise
+- **Q**: Quit the application
+- **W**: Switch to wireframe view mode (VTK native)
+- **S**: Switch to surface view mode (VTK native)
+- **Ctrl+Shift+P**: Show the command palette
+- **Left Arrow**: Roll the view clockwise around the view direction
+- **Right Arrow**: Roll the view counterclockwise around the view direction
+
+## Saving, Loading, and Exporting
+
+- **Save State**: Save the current state of the visualization to a JSON file.
+- **Load State**: Load a previously saved state from a JSON file.
+- **Export to OBJ**: Export the current view to an OBJ file.
+- **Export to PNG**: Export the current view to a PNG file.
+- **Export to HTML**: Export the current view to an interactive WebGL visualization.
+
 ## Project Structure
 
 ```ini
 .
 ├── apps
-│   ├── plot_function_bac.py
-│   └── 
-
-plot_function.py
-
-
+│   └── plot_function.py
 ├── Dockerfile
 ├── qt
+│   ├── __init_.py
 │   ├── callbacks.py
 │   ├── camera.py
 │   ├── color_picker.py
 │   ├── command_palette.py
-│   ├── __init_.py
-│   ├── latex_utils.py
 │   ├── main_window.py
-│   ├── range_slider2.py
 │   ├── range_slider.py
 │   ├── slider.py
 │   └── widgets.py
-├── 
-
-README.md
-
-
-├── 
-
-requirements.txt
-
-
+├── README.md
+├── requirements.txt
 └── src
     ├── core
-    │   ├── constants.py
     │   ├── __init__.py
+    │   ├── constants.py
     │   ├── interactor.py
     │   └── visualization.py
     ├── __init__.py
     ├── math
+    │   ├── __init__.py
     │   ├── custom_transformations.py
     │   ├── func_utils.py
     │   ├── implicit_functions.py
-    │   ├── __init__.py
-    │   ├── text_preprocessing_bac.py
     │   ├── text_preprocessing.py
     │   └── tuple_parser.py
     ├── utils
-    │   ├── cube_axes.py
     │   ├── __init__.py
+    │   ├── cube_axes.py
     │   ├── line_utils.py
     │   └── surface_utils.py
     └── widgets
-        ├── callbacks.py
         ├── __init__.py
+        ├── callbacks.py
 ```
 
 ## Contributing
