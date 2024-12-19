@@ -78,10 +78,10 @@ class VTKMainWindow(QMainWindow):
         
         # Roll rotation shortcuts using arrow keys
         roll_clockwise_shortcut = QShortcut(QKeySequence(Qt.Key_Left), self)
-        roll_clockwise_shortcut.activated.connect(self.roll_clockwise)
+        roll_clockwise_shortcut.activated.connect(self.roll_counterclockwise)
 
         roll_counterclockwise_shortcut = QShortcut(QKeySequence(Qt.Key_Right), self)
-        roll_counterclockwise_shortcut.activated.connect(self.roll_counterclockwise)
+        roll_counterclockwise_shortcut.activated.connect(self.roll_clockwise)
 
     def close_application(self):
         self.close()
