@@ -1,22 +1,42 @@
-VTK/
-│
-├── src/
-│   ├── __init__.py
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── constants.py
-│   │   ├── interactor.py
-│   │   └── visualization.py
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   ├── surface_utils.py
-│   │   └── trace_utils.py
-│   └── widgets/
-│       ├── __init__.py
-│       └── sliders.py
-│
-├── examples/
-│   └── cylinder_example.py
-│
+.
+├── apps
+│   ├── plot_function_bac.py
+│   └── plot_function.py
+├── Dockerfile
+├── qt
+│   ├── callbacks.py
+│   ├── camera.py
+│   ├── color_picker.py
+│   ├── command_palette.py
+│   ├── __init_.py
+│   ├── latex_utils.py
+│   ├── main_window.py
+│   ├── range_slider2.py
+│   ├── range_slider.py
+│   ├── slider.py
+│   └── widgets.py
 ├── README.md
-└── requirements.txt
+├── requirements.txt
+└── src
+    ├── core
+    │   ├── constants.py
+    │   ├── __init__.py
+    │   ├── interactor.py
+    │   └── visualization.py
+    ├── __init__.py
+    ├── math
+    │   ├── custom_transformations.py
+    │   ├── func_utils.py
+    │   ├── implicit_functions.py
+    │   ├── __init__.py
+    │   ├── text_preprocessing_bac.py
+    │   ├── text_preprocessing.py
+    │   └── tuple_parser.py
+    ├── utils
+    │   ├── cube_axes.py
+    │   ├── __init__.py
+    │   ├── line_utils.py
+    │   └── surface_utils.py
+    └── widgets
+        ├── callbacks.py
+        ├── __init__.py

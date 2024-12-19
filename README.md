@@ -1,134 +1,213 @@
-# VTK Visualization Framework
+# Mathematical Visualization Tool
 
-## Overview
+A 3D visualization tool for mathematical objects including implicit surfaces, parametric curves, parametric surfaces, and points in 3D space. The application supports real-time rendering with customizable visual properties and advanced mathematical operations.
 
-This project provides a framework for visualizing quadratic surfaces using VTK (Visualization Toolkit). It includes utilities for creating and managing trace lines, custom interactor styles, and slider widgets for interactive visualization. The framework is designed to be modular and extensible, making it easy to integrate into various visualization applications.
+## Features
+
+### Supported Mathematical Objects
+
+1. **Implicit Surfaces**
+   - Equations of the form f(x,y,z) = 0
+   - Supports arbitrary mathematical expressions involving x, y, and z variables
+   - Automatically handles complex mathematical operations and simplifications
+
+2. **Parametric Curves**
+   - Vector-valued functions r(t) = [x(t), y(t), z(t)]
+   - Defined using Matrix notation or vector functions
+   - Support for computing differential geometry properties
+
+3. **Parametric Surfaces**
+   - Vector-valued functions r(u,v) = [x(u,v), y(u,v), z(u,v)]
+   - Two-parameter representations using u and v variables
+   - Surface visualization with customizable properties
+
+4. **Points**
+   - Static points in 3D space
+   - Represented as constant vectors
+
+### Visualization Features
+
+- Real-time 3D rendering
+- Customizable visual properties:
+  - Color gradients (color_start, color_end)
+  - Line colors
+  - Opacity
+  - Thickness
+  - Trace spacing
+  - Dash spacing
+- Toggle between surface and line representations
+- Automatic bounds detection and adjustment
+- Safe handling of complex numbers and undefined regions
+
+### Mathematical Operations
+
+The tool includes several built-in mathematical functions for differential geometry:
+
+- `curvature(r)`: Computes the curvature of a parametric curve
+- `T(r)`: Tangent vector field
+- `N(r)`: Normal vector field
+- `B(r)`: Binormal vector field
+- `torsion(r)`: Computes the torsion of a parametric curve
+- `osculating_circle(r, a)`: Generates the osculating circle at parameter value a
+- `norm(vector)`: Computes the norm of a vector
+- `m(x, y, z)`: Helper function for creating 3D vectors
+
+## Input Format
+
+### Vector Input
+```python
+m(x, y, z)  # Creates a 3D vector [x, y, z]
+```
+
+### Parametric Curves
+```python
+# Using the m() function:
+m(cos(t), sin(t), t)  # Helix
+```
+
+### Implicit Surfaces
+```python
+x^2 + y^2 + z^2 - 1  # Sphere
+```
+
+### Parametric Surfaces
+```python
+m(u*cos(v), u*sin(v), v)  # Helicoid
+```
+
+## Constraints and Limitations
+
+- Functions must be real-valued (complex results are filtered out)
+- Parameter ranges:
+  - t-range for curves: Default (0, 1)
+  - u,v-ranges for surfaces: Default (0, 1)
+- Bounds are automatically adjusted based on global and local settings
+- Implicit multiplication is supported but should be used carefully
+- Functions must be continuous within their domains
+
+## Error Handling
+
+The application includes error handling for:
+- Invalid mathematical expressions
+- Complex number results
+- Non-real outputs
+- Undefined regions
+- Invalid parameter ranges
+- Missing coefficients
+
+## Implementation Details
+
+- Uses SymPy for symbolic mathematics
+- VTK for 3D rendering
+- Custom parsing and transformation pipeline for mathematical expressions
+- Safe evaluation system for numerical computations
+- Automatic simplification and expansion of expressions
+
+## Installation
+
+### Using pip
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/motilin/VTK.git
+   cd VTK
+   ```
+
+2. Create a virtual environment (optional but recommended):
+   ```sh
+   python -m venv venv
+   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   ```
+
+3. Install the required packages:
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+### Using conda
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/motilin/VTK.git
+   cd VTK
+   ```
+
+2. Create a conda environment:
+   ```sh
+   conda create --name vtk_env python=3.8
+   conda activate vtk_env
+   ```
+
+3. Install the required packages:
+   ```sh
+   conda install --file requirements.txt
+   ```
+
+## Running the Application
+
+To run the application, execute the following command:
+```sh
+python plot_function.py
+```
 
 ## Project Structure
 
+```ini
+.
+├── apps
+│   ├── plot_function_bac.py
+│   └── 
+
+plot_function.py
+
+
+├── Dockerfile
+├── qt
+│   ├── callbacks.py
+│   ├── camera.py
+│   ├── color_picker.py
+│   ├── command_palette.py
+│   ├── __init_.py
+│   ├── latex_utils.py
+│   ├── main_window.py
+│   ├── range_slider2.py
+│   ├── range_slider.py
+│   ├── slider.py
+│   └── widgets.py
+├── 
+
+README.md
+
+
+├── 
+
+requirements.txt
+
+
+└── src
+    ├── core
+    │   ├── constants.py
+    │   ├── __init__.py
+    │   ├── interactor.py
+    │   └── visualization.py
+    ├── __init__.py
+    ├── math
+    │   ├── custom_transformations.py
+    │   ├── func_utils.py
+    │   ├── implicit_functions.py
+    │   ├── __init__.py
+    │   ├── text_preprocessing_bac.py
+    │   ├── text_preprocessing.py
+    │   └── tuple_parser.py
+    ├── utils
+    │   ├── cube_axes.py
+    │   ├── __init__.py
+    │   ├── line_utils.py
+    │   └── surface_utils.py
+    └── widgets
+        ├── callbacks.py
+        ├── __init__.py
 ```
-VTK/
-│
-├── src/
-│   ├── __init__.py
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── constants.py
-│   │   ├── interactor.py
-│   │   └── visualization.py
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   ├── surface_utils.py
-│   │   └── trace_utils.py
-│   ├── math/
-│   │   ├── __init__.py
-│   │   └── implicit_functions.py
-│   └── widgets/
-│       ├── __init__.py
-│       └── sliders.py
-│
-├── applications/
-│   └── plot_function.py
-│
-├── qt/
-│   ├── __init__.py
-│   ├── main_window.py
-│   ├── range_slider.py
-│   └── widgets.py
-│
-├── README.md
-├── requirements.txt
-└── Dockerfile
-```
-
-### Directories and Files
-
-- **src/**: Contains the main source code for the framework.
-  - **core/**: Core functionalities such as constants, interactor styles, and visualization setup.
-  - **utils/**: Utility functions for surface and trace line creation.
-  - **math/**: Mathematical functions defining implicit surfaces.
-  - **widgets/**: Custom slider widgets and their callbacks.
-- **applications/**: Application scripts for specific visualizations.
-- **qt/**: Qt-based GUI components including main window, range sliders, and widgets.
-- **README.md**: Project documentation.
-- **requirements.txt**: List of dependencies required to run the project.
-- **Dockerfile**: Docker configuration for containerized deployment.
-
-## Dependencies
-
-The project requires the following Python packages:
-
-- `vtk>=9.0.0`
-- `sympy>=1.8`
-- `numpy>=1.19.0`
-- `rich>=10.0.0`
-- `PyQt5>=5.15.0`
-- `vtkmodules>=9.0.0`
-
-You can install the dependencies using the following command:
-
-```sh
-pip install -r requirements.txt
-```
-
-## Installation using Conda
-
-To install the package using conda, follow these steps:
-
-1. Create a new conda environment:
-
-    ```sh
-    conda create -n vtk_env python=3.9
-    ```
-
-2. Activate the conda environment:
-
-    ```sh
-    conda activate vtk_env
-    ```
-
-3. Install the required packages:
-
-    ```sh
-    conda install -c conda-forge vtk sympy numpy rich pyqt
-    ```
-
-4. Install additional packages using pip:
-
-    ```sh
-    pip install vtkmodules
-    ```
-
-## Usage
-
-### Main Application: Function Plotter
-
-The main application script `applications/plot_function.py` provides an interactive interface for visualizing various implicit functions. The output includes a 3D plot of the selected function with adjustable parameters and visualization options.
-
-To run the main application, use the following command:
-
-```sh
-python applications/plot_function.py
-```
-
-### Functions
-
-The implicit functions used in the visualization are defined in the `src/math/implicit_functions.py` file. These functions are mathematical equations that define surfaces in 3D space. You can modify or add new functions to this file to extend the visualization capabilities.
-
-### Key Components
-
-- **CustomInteractorStyle**: Handles key press events for interactive visualization.
-- **SliderManager**: Manages the creation and configuration of slider widgets.
-- **SliderCallbacks**: Contains callback functions for slider interactions.
-
-### Creating Custom Visualizations
-
-You can create custom visualizations by following these steps:
-
-1. **Setup Renderer and Window**: Use `setup_renderer` and `configure_window` functions from `src.core.visualization`.
-2. **Create Actors and Mappers**: Define your VTK actors and mappers.
-3. **Initialize Slider Managers**: Use `SliderManager` to create and manage sliders.
-4. **Register Callbacks**: Define and register callback functions for interactive elements.
 
 ## Contributing
 
