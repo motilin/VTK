@@ -1,6 +1,7 @@
 import vtk
 import numpy as np
 from src.core.constants import (
+    LINES_RESOLUTION,
     AXES_LENGTH,
     COLORS,
     X_MIN,
@@ -197,7 +198,7 @@ def create_func_traces_actor(
     thickness=2,
     color=COLORS.GetColor3d("charcoal"),
     opacity=1.0,
-    resolution=50,
+    resolution=LINES_RESOLUTION,
 ):
     """
     Creates an implicit function traces actor with proper transparency handling.
@@ -627,7 +628,7 @@ def create_horizontal_contours_actor(
     thickness=2,
     color=COLORS.GetColor3d("charcoal"),
     opacity=1.0,
-    resolution=50,
+    resolution=LINES_RESOLUTION,
 ):
     """
     Creates a VTK actor for horizontal contour traces of an implicit function.
