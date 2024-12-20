@@ -631,9 +631,9 @@ def create_horizontal_contours_actor(
     resolution=LINES_RESOLUTION,
 ):
     """
-    Creates a VTK actor for horizontal contour traces of an implicit function.
-    Each contour represents points where the function equals zero at a specific z-level,
-    with points properly ordered to form continuous contours.
+    Creates a VTK actor for horizontal contour traces of an implicit function using
+    an efficient marching squares implementation. Each contour represents points where
+    the function equals zero at specific z-levels.
 
     Parameters:
     -----------
@@ -657,162 +657,89 @@ def create_horizontal_contours_actor(
     """
     if space == 0 or thickness == 0 or opacity == 0:
         return None
-    space = abs(space)
 
-    def find_zero_crossings(points, values):
-        """
-        Finds points where the implicit function crosses zero.
-        Uses linear interpolation for better accuracy.
+    # Create grid for each z-level
+    x = np.linspace(bounds[0], bounds[1], resolution)
+    y = np.linspace(bounds[2], bounds[3], resolution)
+    z_levels = np.arange(bounds[4], bounds[5] + space, space)
 
-        Parameters:
-        -----------
-        points : numpy array
-            Array of 3D points
-        values : numpy array
-            Function values at points
+    # Pre-allocate arrays for efficiency
+    X, Y = np.meshgrid(x, y)
 
-        Returns:
-        --------
-        list of points where function crosses zero
-        """
-        crossings = []
-        resolution_1d = int(np.sqrt(len(points)))
+    # Create structured grid for VTK
+    grid = vtk.vtkStructuredGrid()
+    grid.SetDimensions(resolution, resolution, 1)
 
-        # Check horizontal segments
-        for i in range(resolution_1d):
-            for j in range(resolution_1d - 1):
-                idx1 = i * resolution_1d + j
-                idx2 = idx1 + 1
-                if values[idx1] * values[idx2] <= 0:  # Zero crossing
-                    p1, p2 = points[idx1], points[idx2]
-                    v1, v2 = values[idx1], values[idx2]
-                    t = -v1 / (v2 - v1) if v2 != v1 else 0.5
-                    point = p1 + t * (p2 - p1)
-                    crossings.append(point)
-
-        # Check vertical segments
-        for i in range(resolution_1d - 1):
-            for j in range(resolution_1d):
-                idx1 = i * resolution_1d + j
-                idx2 = idx1 + resolution_1d
-                if values[idx1] * values[idx2] <= 0:  # Zero crossing
-                    p1, p2 = points[idx1], points[idx2]
-                    v1, v2 = values[idx1], values[idx2]
-                    t = -v1 / (v2 - v1) if v2 != v1 else 0.5
-                    point = p1 + t * (p2 - p1)
-                    crossings.append(point)
-
-        return np.array(crossings)
-
-    def order_contour_points(points):
-        """
-        Orders points to form continuous contours using nearest-neighbor approach.
-        Handles multiple separate contours if they exist.
-
-        Parameters:
-        -----------
-        points : numpy array
-            Array of 3D points
-
-        Returns:
-        --------
-        list of numpy arrays
-            Each array contains ordered points forming a continuous contour
-        """
-        if len(points) < 2:
-            return []
-
-        def dist(p1, p2):
-            return np.sqrt(np.sum((p1 - p2) ** 2))
-
-        def find_nearest(current, unvisited, max_dist):
-            if len(unvisited) == 0:
-                return None
-            distances = [dist(current, p) for p in unvisited]
-            min_idx = np.argmin(distances)
-            return min_idx if distances[min_idx] < max_dist else None
-
-        # Estimate maximum distance between connected points
-        dx = (bounds[1] - bounds[0]) / resolution
-        dy = (bounds[3] - bounds[2]) / resolution
-        max_dist = 2.0 * np.sqrt(dx * dx + dy * dy)
-
-        remaining_points = points.copy()
-        contours = []
-
-        while len(remaining_points) > 0:
-            current_contour = [remaining_points[0]]
-            remaining_points = np.delete(remaining_points, 0, axis=0)
-
-            # Grow contour in forward direction
-            while True:
-                nearest_idx = find_nearest(
-                    current_contour[-1], remaining_points, max_dist
-                )
-                if nearest_idx is None:
-                    break
-                current_contour.append(remaining_points[nearest_idx])
-                remaining_points = np.delete(remaining_points, nearest_idx, axis=0)
-
-            if len(current_contour) >= 2:
-                contours.append(np.array(current_contour))
-
-        return contours
-
+    # Create append filter for combining all contours
     append_filter = vtk.vtkAppendPolyData()
-    z_values = np.arange(bounds[4], bounds[5] + space, space)
 
-    for z in z_values:
-        # Create grid points in the x-y plane
-        x = np.linspace(bounds[0], bounds[1], resolution)
-        y = np.linspace(bounds[2], bounds[3], resolution)
-        X, Y = np.meshgrid(x, y, indexing="ij")
-        Z = np.full_like(X, z)
+    # Process each z-level
+    for z_level in z_levels:
+        # Evaluate function on 2D grid at current z-level
+        Z = np.full_like(X, z_level)
+        values = implicit_func(X.ravel(), Y.ravel(), Z.ravel()).reshape(X.shape)
 
-        # Evaluate function on the grid
-        points = np.stack([X.ravel(), Y.ravel(), Z.ravel()], axis=1)
-        values = evaluate_function_on_points(points, implicit_func)
+        # Create points for VTK structured grid
+        points = np.stack([X, Y, Z], axis=-1)
+        vtk_points = vtk.vtkPoints()
+        vtk_points.SetData(numpy_support.numpy_to_vtk(points.reshape(-1, 3), deep=True))
+        grid.SetPoints(vtk_points)
 
-        # Find zero crossings
-        crossing_points = find_zero_crossings(points, values)
+        # Set scalar values
+        vtk_scalars = numpy_support.numpy_to_vtk(values.ravel(), deep=True)
+        vtk_scalars.SetName("values")
+        grid.GetPointData().SetScalars(vtk_scalars)
 
-        if len(crossing_points) > 0:
-            # Order points into continuous contours
-            ordered_contours = order_contour_points(crossing_points)
+        # Create contour filter with optimized settings
+        contour = vtk.vtkContourFilter()
+        contour.SetInputData(grid)
+        contour.SetValue(0, 0.0)
+        contour.SetComputeNormals(0)
+        contour.SetComputeGradients(0)
+        contour.SetComputeScalars(0)
+        contour.SetGenerateTriangles(0)
 
-            # Create polydata for each continuous contour
-            for contour_points in ordered_contours:
-                polydata = create_curve_polydata_with_clipping(contour_points, bounds)
-                if polydata is not None:
-                    append_filter.AddInputData(polydata)
+        # Use faster algorithms when possible
+        contour.SetNumberOfContours(1)
+        contour.SetUseScalarTree(1)
 
+        # Update and add to append filter
+        contour.Update()
+        output = contour.GetOutput()
+
+        if output.GetNumberOfPoints() > 0:
+            append_filter.AddInputData(output)
+
+    # Create the final visualization pipeline
     append_filter.Update()
 
-    # Create mapper and configure visualization
+    # Create mapper with optimized settings
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInputConnection(append_filter.GetOutputPort())
     mapper.ScalarVisibilityOff()
+    # mapper.ImmediateModeRenderingOff()
 
+    # Create and configure actor
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
 
-    # Set up properties for appearance
+    # Configure appearance properties
     properties = actor.GetProperty()
     properties.SetColor(color)
     properties.SetLineWidth(thickness)
     properties.SetRepresentationToWireframe()
+    properties.SetRenderLinesAsTubes(True)
     properties.LightingOff()
     properties.SetAmbient(1.0)
     properties.SetDiffuse(0.0)
     properties.SetSpecular(0.0)
     properties.SetOpacity(opacity)
-    properties.SetRenderLinesAsTubes(True)
 
     return actor
 
 
 def create_parametric_horizontal_contours_actor(
-    parametric_function,
+    parametric_function,  # NumPy function (u,v) -> (x,y,z)
     u_range=(0, 1),
     v_range=(0, 1),
     global_bounds=(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX),
@@ -822,156 +749,97 @@ def create_parametric_horizontal_contours_actor(
     opacity=1.0,
 ):
     """
-    Creates a VTK actor for horizontal contour traces of a parametric surface.
-    Points are properly ordered to form continuous contours.
+    Creates a VTK actor for horizontal contour traces of a parametric surface using
+    an efficient marching squares implementation. Each contour represents the intersection
+    of the surface with horizontal planes at different z-levels.
 
-    Parameters remain the same as the original function.
+    Parameters:
+    -----------
+    parametric_function : callable
+        NumPy vectorized function that takes u, v arrays and returns x, y, z coordinates
+    u_range : tuple
+        The range of the u parameter (u_min, u_max)
+    v_range : tuple
+        The range of the v parameter (v_min, v_max)
+    global_bounds : tuple
+        The bounds for clipping (xmin, xmax, ymin, ymax, zmin, zmax)
+    trace_spacing : float
+        The vertical space between contour levels
+    color : tuple
+        RGB values (0-1) for the contours
+    thickness : int
+        Thickness of the contour lines
+    opacity : float
+        Transparency of the contours (0 = fully transparent, 1 = fully opaque)
+
+    Returns:
+        vtkActor object or None if invalid parameters
     """
-    if trace_spacing == 0 or thickness == 0 or opacity == 0:
+    if trace_spacing <= 0 or thickness <= 0 or opacity <= 0:
         return None
-    trace_spacing = abs(trace_spacing)
 
-    def find_intersections(v_fixed, z_level):
-        """
-        Finds intersection points along a constant-v curve with a horizontal plane.
-        Returns u-values where the curve intersects the z_level plane.
-        """
-        u_samples = np.linspace(u_range[0], u_range[1], 200)
-        v_samples = np.full_like(u_samples, v_fixed)
+    # Create parameter space grid
+    u = np.linspace(u_range[0], u_range[1], 100)
+    v = np.linspace(v_range[0], v_range[1], 100)
+    U, V = np.meshgrid(u, v)
 
-        x, y, z = parametric_function(u_samples, v_samples)
-        signs = np.sign(z - z_level)
-        sign_changes = signs[:-1] * signs[1:] <= 0
+    # Pre-evaluate surface points
+    X, Y, Z = parametric_function(U, V)
 
-        intersection_points = []
-        for i in range(len(sign_changes)):
-            if sign_changes[i]:
-                u1, u2 = u_samples[i], u_samples[i + 1]
-                z1, z2 = z[i], z[i + 1]
-                t = (z_level - z1) / (z2 - z1)
-                u_intersect = u1 + t * (u2 - u1)
-
-                x_int, y_int, z_int = parametric_function(
-                    np.array([u_intersect]), np.array([v_fixed])
-                )
-
-                if (
-                    global_bounds[0] <= x_int <= global_bounds[1]
-                    and global_bounds[2] <= y_int <= global_bounds[3]
-                ):
-                    intersection_points.append(
-                        (u_intersect, v_fixed, float(x_int), float(y_int), float(z_int))
-                    )
-
-        return intersection_points
-
-    def order_contour_points(points):
-        """
-        Orders points to form a continuous contour using nearest-neighbor approach.
-        Handles multiple separate contours if they exist.
-
-        Parameters:
-        -----------
-        points : list of tuples
-            Each tuple contains (u, v, x, y, z) coordinates
-
-        Returns:
-        --------
-        list of lists
-            Each inner list contains ordered points forming a continuous contour
-        """
-        if not points:
-            return []
-
-        # Convert to numpy array for easier manipulation
-        points = np.array(points)
-
-        # Function to compute distance between points
-        def dist(p1, p2):
-            return np.sqrt(np.sum((p1[2:5] - p2[2:5]) ** 2))
-
-        # Function to find nearest unvisited point
-        def find_nearest(current, unvisited):
-            if len(unvisited) == 0:
-                return None
-            distances = [dist(current, p) for p in unvisited]
-            min_idx = np.argmin(distances)
-            return min_idx if distances[min_idx] < trace_spacing * 2 else None
-
-        remaining_points = points.copy()
-        contours = []
-
-        while len(remaining_points) > 0:
-            # Start a new contour
-            current_contour = [remaining_points[0]]
-            remaining_points = np.delete(remaining_points, 0, axis=0)
-
-            # Grow contour in forward direction
-            while True:
-                nearest_idx = find_nearest(current_contour[-1], remaining_points)
-                if nearest_idx is None:
-                    break
-                current_contour.append(remaining_points[nearest_idx])
-                remaining_points = np.delete(remaining_points, nearest_idx, axis=0)
-
-            # Add the contour if it has enough points
-            if len(current_contour) >= 2:
-                contours.append(current_contour)
-
-        return contours
-
+    # Create append filter for combining all contours
     append_filter = vtk.vtkAppendPolyData()
+
+    # Process each z-level
     z_levels = np.arange(
         global_bounds[4], global_bounds[5] + trace_spacing, trace_spacing
     )
-    v_resolution = int(max(50, min(200, 1 / trace_spacing)))
-    v_values = np.linspace(v_range[0], v_range[1], v_resolution)
 
     for z_level in z_levels:
-        # Collect all intersection points for this z-level
-        level_points = []
-        for v in v_values:
-            intersections = find_intersections(v, z_level)
-            level_points.extend(intersections)
+        # Create structured grid for VTK
+        grid = vtk.vtkStructuredGrid()
+        grid.SetDimensions(X.shape[0], X.shape[1], 1)
 
-        if not level_points:
-            continue
+        # Create points at parametric positions
+        points = np.stack([X, Y, Z], axis=-1)
+        vtk_points = vtk.vtkPoints()
+        vtk_points.SetData(numpy_support.numpy_to_vtk(points.reshape(-1, 3), deep=True))
+        grid.SetPoints(vtk_points)
 
-        # Order the points into continuous contours
-        ordered_contours = order_contour_points(level_points)
+        # Create scalar field as the distance from the z-level
+        values = Z - z_level
+        vtk_scalars = numpy_support.numpy_to_vtk(values.ravel(), deep=True)
+        vtk_scalars.SetName("z_distance")
+        grid.GetPointData().SetScalars(vtk_scalars)
 
-        # Create polydata for each continuous contour
-        for contour in ordered_contours:
-            xyz_points = np.array(
-                [p[2:5] for p in contour]
-            )  # Extract x,y,z coordinates
-            if len(xyz_points) >= 2:
-                polydata = create_curve_polydata_with_clipping(
-                    xyz_points, global_bounds
-                )
-                if polydata is not None:
-                    append_filter.AddInputData(polydata)
+        # Create contour filter
+        contour = vtk.vtkContourFilter()
+        contour.SetInputData(grid)
+        contour.SetValue(0, 0.0)
+        contour.Update()
 
+        # Add valid contours to the append filter
+        output = contour.GetOutput()
+        if output.GetNumberOfPoints() > 0:
+            append_filter.AddInputData(output)
+
+    # Finalize contour collection
     append_filter.Update()
 
-    # Create mapper and actor
+    # Create and configure mapper
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInputConnection(append_filter.GetOutputPort())
     mapper.ScalarVisibilityOff()
 
+    # Create and configure actor
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
 
-    # Set up properties for appearance
+    # Configure appearance
     properties = actor.GetProperty()
     properties.SetColor(color)
     properties.SetLineWidth(thickness)
     properties.SetRepresentationToWireframe()
-    properties.LightingOff()
-    properties.SetAmbient(1.0)
-    properties.SetDiffuse(0.0)
-    properties.SetSpecular(0.0)
-    properties.SetOpacity(opacity)
     properties.SetRenderLinesAsTubes(True)
+    properties.SetOpacity(opacity)
 
     return actor
