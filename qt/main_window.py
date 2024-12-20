@@ -75,7 +75,7 @@ class VTKMainWindow(QMainWindow):
 
         rotate_down_shortcut = QShortcut(QKeySequence(Qt.Key_K), self)
         rotate_down_shortcut.activated.connect(self.rotate_down)
-        
+
         # Roll rotation shortcuts using arrow keys
         roll_clockwise_shortcut = QShortcut(QKeySequence(Qt.Key_Left), self)
         roll_clockwise_shortcut.activated.connect(self.roll_counterclockwise)

@@ -285,16 +285,16 @@ def create_parametric_curve_actor(
 ):
     if thickness == 0 or opacity == 0:
         return None
-    
+
     # Dynamic resolution calculation
     t_span = abs(t_range[1] - t_range[0])
     tube_radius = thickness / 40
-    
+
     # Resolution facor
     base_resolution = int(max(200, min(100, t_span * 200)))
     thickness_factor = max(1, 20 * tube_radius)
     curvature_resolution = int(base_resolution * thickness_factor)
-    
+
     # Bound the resolution to prevent extreme values
     resolution = max(50, min(curvature_resolution, 1000))
 
@@ -467,43 +467,6 @@ def create_parametric_curve_points(
     return np.column_stack([x, y, z])
 
 
-def create_parametric_curve_points2(
-    parametric_function, fixed_param, is_u_curve, u_range, v_range, trace_spacing
-):
-    """
-    Creates points for a parametric curve at constant u or v with adaptive resolution.
-
-    Parameters:
-    -----------
-    parametric_function : callable
-        Function that takes (u,v) arrays and returns (x,y,z) arrays
-    fixed_param : float
-        The fixed value of u or v
-    is_u_curve : bool
-        True if creating curve with constant u, False for constant v
-    u_range : tuple
-        Range of u parameter (u_min, u_max)
-    v_range : tuple
-        Range of v parameter (v_min, v_max)
-    trace_spacing : float
-        Spacing between traces (used for resolution calculation)
-
-    Returns:
-        numpy array of 3D points
-    """
-    if is_u_curve:
-        resolution = calculate_adaptive_resolution(v_range, trace_spacing)
-        u = np.full(resolution, fixed_param)
-        v = np.linspace(v_range[0], v_range[1], resolution)
-    else:
-        resolution = calculate_adaptive_resolution(u_range, trace_spacing)
-        u = np.linspace(u_range[0], u_range[1], resolution)
-        v = np.full(resolution, fixed_param)
-
-    x, y, z = parametric_function(u, v)
-    return np.column_stack([x, y, z])
-
-
 def create_curve_polydata_with_clipping(points, global_bounds):
     """
     Creates VTK polydata for a curve with proper clipping to global bounds.
@@ -654,4 +617,227 @@ def create_parametric_surface_traces_actor(
     properties.SetOpacity(opacity)
     properties.SetRenderLinesAsTubes(True)
 
+    return actor
+
+
+def create_horizontal_contours_actor(
+    implicit_func,
+    bounds,
+    space=1,
+    thickness=2,
+    color=COLORS.GetColor3d("charcoal"),
+    opacity=1.0,
+    resolution=50,
+):
+    """
+    Creates a VTK actor for horizontal contour traces of an implicit function.
+    Each contour represents points where the function equals zero at a specific z-level.
+
+    Parameters:
+    -----------
+    implicit_func : callable
+        Vectorized function that takes x, y, z arrays and returns function values
+    bounds : tuple
+        The bounds of the function (xmin, xmax, ymin, ymax, zmin, zmax)
+    space : float
+        The vertical space between contour levels
+    thickness : int
+        Thickness of the contour lines
+    color : tuple
+        RGB values (0-1) for the contours
+    opacity : float
+        Transparency of the contours (0 = fully opaque, 1 = fully transparent)
+    resolution : int
+        The resolution of each contour curve
+
+    Returns:
+        vtkActor object or None if invalid parameters
+    """
+    if space == 0 or thickness == 0 or opacity == 0:
+        return None
+    space = abs(space)
+
+    # Create append filter to combine all contours
+    append_filter = vtk.vtkAppendPolyData()
+
+    # Create horizontal plane points for each z-level
+    z_values = np.arange(bounds[4], bounds[5] + space, space)
+
+    for z in z_values:
+        # Create grid points in the x-y plane
+        x = np.linspace(bounds[0], bounds[1], resolution)
+        y = np.linspace(bounds[2], bounds[3], resolution)
+        X, Y = np.meshgrid(x, y, indexing="ij")
+        Z = np.full_like(X, z)
+
+        # Evaluate function on the grid
+        points = np.stack([X.ravel(), Y.ravel(), Z.ravel()], axis=1)
+        values = evaluate_function_on_points(points, implicit_func)
+
+        # Create contour polydata
+        contour_data = create_contour_polydata(points, values, resolution)
+        if contour_data is not None:
+            append_filter.AddInputData(contour_data)
+
+    append_filter.Update()
+
+    # Create mapper and configure visualization
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(append_filter.GetOutputPort())
+    mapper.ScalarVisibilityOff()
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    # Set up properties for appearance
+    properties = actor.GetProperty()
+    properties.SetColor(color)
+    properties.SetLineWidth(thickness)
+    properties.SetRepresentationToWireframe()
+    properties.LightingOff()
+    properties.SetAmbient(1.0)
+    properties.SetDiffuse(0.0)
+    properties.SetSpecular(0.0)
+    properties.SetOpacity(opacity)
+    properties.SetRenderLinesAsTubes(True)
+
+    return actor
+
+
+def create_parametric_horizontal_contours_actor(
+    parametric_function,  # NumPy function (u,v) -> (x,y,z)
+    u_range=(0, 1),
+    v_range=(0, 1),
+    global_bounds=(X_MIN, X_MAX, Y_MIN, Y_MAX, Z_MIN, Z_MAX),
+    trace_spacing=0.1,
+    color=vtk.vtkNamedColors().GetColor3d("charcoal"),
+    thickness=2,
+    opacity=1.0,
+):
+    """
+    Creates a VTK actor for horizontal contour traces of a parametric surface.
+    Each contour represents the intersection of the surface with horizontal planes
+    at different z-levels.
+
+    Parameters:
+    -----------
+    parametric_function : callable
+        NumPy function that takes u, v arrays and returns x, y, z coordinates
+    u_range : tuple
+        The range of the u parameter (u_min, u_max)
+    v_range : tuple
+        The range of the v parameter (v_min, v_max)
+    global_bounds : tuple
+        The bounds for clipping (xmin, xmax, ymin, ymax, zmin, zmax)
+    trace_spacing : float
+        The vertical space between contour levels
+    color : tuple
+        RGB values (0-1) for the contours
+    thickness : int
+        Thickness of the contour lines
+    opacity : float
+        Transparency of the contours (0 = fully opaque, 1 = fully transparent)
+
+    Returns:
+        vtkActor object or None if invalid parameters
+    """
+    if trace_spacing == 0 or thickness == 0 or opacity == 0:
+        return None
+    trace_spacing = abs(trace_spacing)
+
+    def find_intersections(v_fixed, z_level):
+        """
+        Finds intersection points along a constant-v curve with a horizontal plane.
+        Returns u-values where the curve intersects the z_level plane.
+        """
+        # Create a dense sampling of u values
+        u_samples = np.linspace(u_range[0], u_range[1], 200)
+        v_samples = np.full_like(u_samples, v_fixed)
+        
+        # Evaluate the parametric function
+        x, y, z = parametric_function(u_samples, v_samples)
+        
+        # Find where the curve crosses the z_level
+        signs = np.sign(z - z_level)
+        sign_changes = signs[:-1] * signs[1:] <= 0
+        
+        intersection_points = []
+        for i in range(len(sign_changes)):
+            if sign_changes[i]:
+                # Linear interpolation to find more precise u value
+                u1, u2 = u_samples[i], u_samples[i + 1]
+                z1, z2 = z[i], z[i + 1]
+                t = (z_level - z1) / (z2 - z1)
+                u_intersect = u1 + t * (u2 - u1)
+                
+                # Evaluate the exact point
+                x_int, y_int, z_int = parametric_function(
+                    np.array([u_intersect]), 
+                    np.array([v_fixed])
+                )
+                
+                # Check if point is within bounds
+                if (global_bounds[0] <= x_int <= global_bounds[1] and
+                    global_bounds[2] <= y_int <= global_bounds[3]):
+                    intersection_points.append((u_intersect, v_fixed))
+        
+        return intersection_points
+
+    append_filter = vtk.vtkAppendPolyData()
+    
+    # Generate z-levels
+    z_levels = np.arange(global_bounds[4], global_bounds[5] + trace_spacing, trace_spacing)
+    
+    # Calculate appropriate number of v-curves based on surface complexity
+    v_resolution = int(max(50, min(200, 1/trace_spacing)))
+    v_values = np.linspace(v_range[0], v_range[1], v_resolution)
+
+    for z_level in z_levels:
+        # Collect intersection points for this z-level
+        level_points = []
+        for v in v_values:
+            intersections = find_intersections(v, z_level)
+            level_points.extend(intersections)
+            
+        if not level_points:
+            continue
+            
+        # Sort points to form continuous contour(s)
+        contours = []
+        current_contour = []
+        
+        # Convert parametric points to 3D coordinates
+        points_array = np.array(level_points)
+        if len(points_array) > 0:
+            x, y, z = parametric_function(points_array[:, 0], points_array[:, 1])
+            xyz_points = np.column_stack([x, y, z])
+            
+            # Create polydata for this contour
+            if len(xyz_points) >= 2:
+                polydata = create_curve_polydata_with_clipping(xyz_points, global_bounds)
+                if polydata is not None:
+                    append_filter.AddInputData(polydata)
+
+    append_filter.Update()
+    
+    # Create mapper and actor
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(append_filter.GetOutputPort())
+    mapper.ScalarVisibilityOff()
+    
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    
+    # Set up properties for appearance
+    properties = actor.GetProperty()
+    properties.SetColor(color)
+    properties.SetLineWidth(thickness)
+    properties.SetRepresentationToWireframe()
+    properties.LightingOff()
+    properties.SetAmbient(1.0)
+    properties.SetDiffuse(0.0)
+    properties.SetSpecular(0.0)
+    properties.SetOpacity(opacity)
+    properties.SetRenderLinesAsTubes(True)
+    
     return actor

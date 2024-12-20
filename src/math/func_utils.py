@@ -2,23 +2,6 @@ import re, copy, vtk
 from rich.console import Console
 from rich.markdown import Markdown
 import numpy as np
-from numpy import (
-    sin,
-    cos,
-    tan,
-    arcsin,
-    arccos,
-    arctan,
-    sinh,
-    cosh,
-    tanh,
-    exp,
-    log,
-    log10,
-    sqrt,
-    pi,
-)
-
 from src.core.constants import (
     X_MIN,
     X_MAX,
@@ -42,6 +25,8 @@ from src.utils.line_utils import (
     create_func_traces_actor,
     create_parametric_curve_actor,
     create_parametric_surface_traces_actor,
+    create_horizontal_contours_actor,
+    create_parametric_horizontal_contours_actor,
 )
 import sympy as sp
 from sympy.matrices import MatrixBase, ImmutableDenseMatrix
@@ -75,10 +60,12 @@ class Func:
         self.type = None
         self.show_surface = True
         self.show_lines = True
+        self.show_contour = False
         self.func = sp.Basic()
         self.coeffs = set()
         self.surface_actor = None
         self.lines_actor = None
+        self.contour_actor = None
         self.console = Console()
         self.parse_function()
 
@@ -241,6 +228,8 @@ class Func:
                 self.surface_actor.SetVisibility(self.show_surface)
         if self.show_lines:
             self.update_lines(safe_np_func, widget.renderer, global_bounds)
+        if self.show_contour:
+            self.update_contour(safe_np_func, widget.renderer, global_bounds)
         widget.vtk_widget.get_render_window().Render()
 
     def get_bounds(self, widget):
@@ -352,6 +341,33 @@ class Func:
         if self.lines_actor:
             renderer.AddActor(self.lines_actor)
 
+    def update_contour(self, np_func, renderer, global_bounds):
+        if self.contour_actor:
+            renderer.RemoveActor(self.contour_actor)
+            self.contour_actor = None
+        if self.type == "implicit":
+            self.contour_actor = create_horizontal_contours_actor(
+                np_func,
+                global_bounds,
+                self.trace_spacing,
+                self.thickness,
+                self.line_color,
+                self.opacity,
+            )
+        elif self.type == "parametric-2":
+            self.contour_actor = create_parametric_horizontal_contours_actor(
+                np_func,
+                self.u_range,
+                self.v_range,
+                global_bounds,
+                self.trace_spacing,
+                self.line_color,
+                self.thickness,
+                self.opacity,
+            )
+        if self.contour_actor:
+            renderer.AddActor(self.contour_actor)
+
     def __eq__(self, other):
         if isinstance(other, Func):
             if self.text and other.text and self.text.strip() == other.text.strip():
@@ -419,6 +435,7 @@ class Func:
             "type": self.type,
             "show_surface": self.show_surface,
             "show_lines": self.show_lines,
+            "show_contour": self.show_contour,
         }
 
     def unmarshalize(self, data):
@@ -449,5 +466,6 @@ class Func:
         self.type = data["type"]
         self.show_surface = data["show_surface"]
         self.show_lines = data["show_lines"]
+        self.show_contour = data.get("show_contour", False)
         self.parse_function()
         return self

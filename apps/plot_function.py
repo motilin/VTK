@@ -165,6 +165,13 @@ class PlotFunc(QWidget):
             True,
             self.set_show_lines,
         )
+        
+        self.show_contour_checkbox = self.control_widget.add_checkbox(
+            "Contour",
+            False,
+            self.set_show_contour,
+        )
+        self.show_contour_checkbox.setVisible(False)
 
         self.func_dropdown = self.control_widget.add_dropdown(
             "Active function", self.func_names, self.update_active_func
@@ -354,6 +361,16 @@ class PlotFunc(QWidget):
             if self.active_func.lines_actor:
                 self.active_func.lines_actor.SetVisibility(state)
             self.vtk_widget.get_render_window().Render()
+            
+    def set_show_contour(self, state):
+        if self.active_func:
+            self.active_func.show_contour = state
+            self.active_func.update_render(self)
+            if self.active_func.contour_actor:
+                self.active_func.contour_actor.SetVisibility(state)
+            self.vtk_widget.get_render_window().Render()
+        else:
+            self.show_contour_checkbox.setVisible(False)
 
     def update_active_func(self, idx):
         if idx != -1 and len(self.functions) > idx:
@@ -396,6 +413,7 @@ class PlotFunc(QWidget):
             )
             self.show_surface_checkbox.setChecked(self.active_func.show_surface)
             self.show_lines_checkbox.setChecked(self.active_func.show_lines)
+            self.show_contour_checkbox.setChecked(self.active_func.show_contour)
             if self.active_func.type == "implicit" or self.active_func.type == "point":
                 self.x_label.setVisible(True)
                 self.x_min.setVisible(True)
@@ -411,6 +429,7 @@ class PlotFunc(QWidget):
                 self.v_range_slider.setVisible(False)
                 self.trace_spacing_slider.setVisible(True)
                 self.dash_spacing.setVisible(False)
+                self.show_contour_checkbox.setVisible(True)
             elif self.active_func.type == "parametric-1":
                 self.x_label.setVisible(False)
                 self.x_min.setVisible(False)
@@ -426,6 +445,7 @@ class PlotFunc(QWidget):
                 self.v_range_slider.setVisible(False)
                 self.trace_spacing_slider.setVisible(False)
                 self.dash_spacing.setVisible(True)
+                self.show_contour_checkbox.setVisible(False)
             elif self.active_func.type == "parametric-2":
                 self.x_label.setVisible(False)
                 self.x_min.setVisible(False)
@@ -441,6 +461,7 @@ class PlotFunc(QWidget):
                 self.v_range_slider.setVisible(True)
                 self.trace_spacing_slider.setVisible(True)
                 self.dash_spacing.setVisible(False)
+                self.show_contour_checkbox.setVisible(True)
 
     def update_slider(self, coeff):
         return lambda val, bounds: (
@@ -498,6 +519,8 @@ class PlotFunc(QWidget):
                     self.renderer.RemoveActor(func.surface_actor)
                 if func.lines_actor:
                     self.renderer.RemoveActor(func.lines_actor)
+                if func.contour_actor:
+                    self.renderer.RemoveActor(func.contour_actor)
         self.vtk_widget.get_render_window().Render()
 
         # Update the functions list and coefficient sliders
