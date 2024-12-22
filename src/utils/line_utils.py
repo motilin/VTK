@@ -1,4 +1,4 @@
-import vtk
+import vtk, logging
 import numpy as np
 from src.core.constants import (
     LINES_RESOLUTION,
@@ -709,6 +709,10 @@ def create_horizontal_contours_actor(
 
         if output.GetNumberOfPoints() > 0:
             append_filter.AddInputData(output)
+            
+    if append_filter.GetNumberOfInputConnections(0) == 0:
+        logging.warning("No valid contours found. Try decreasing the trace spacing.")
+        return None
 
     # Create the final visualization pipeline
     append_filter.Update()
